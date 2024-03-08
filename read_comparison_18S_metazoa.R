@@ -5,6 +5,7 @@ setwd("C:/Users/johan/OneDrive/R/Master project")
 
 #Taxa table
 taxa_18S=read.table("C:/Users/johan/OneDrive/R/Master project/taxa_18S.tsv") 
+taxa_18S = taxa_18S[!is.na(taxa_18S[, 1]), ]
 
 #Normalized seqtab table metazoa 
 norm_seqtab_18S=read.table("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_18S_240308.tsv")
@@ -159,9 +160,9 @@ print(fractions)
 #################### 18S (METAZOA ONLY) #######################################
 
 #18S metazoa only
-taxa_18S_metazoa = taxa_18S[!is.na(taxa_18S[, 4]), ]
 taxa_metazoa = taxa_18S[taxa_18S[, 4] == "Metazoa", ]
-#write.table(taxa_metazoa, "C:/Users/johan/OneDrive/R/Master project/taxa_metazoa")
+taxa_metazoa = taxa_metazoa[!is.na(taxa_metazoa[, 1]), ]
+write.csv(taxa_metazoa, "C:/Users/johan/OneDrive/R/Master project/taxa_metazoa.csv", row.names = FALSE)
 
 meta_taxa_list=list()
 
@@ -301,22 +302,28 @@ print(p)
 ggsave <- function(..., bg = 'white') ggplot2::ggsave(..., bg = bg)
 ggsave("C:/Users/johan/OneDrive/R/Master project/plots/reads_distribution.png",p)
 
-############## NMDS & Shannon index for ASVs in samples ############################
 
-# Calculate Bray-Curtis dissimilarity and Shannon index
+############## NMDS & Shannon ###########################################################
 
-matrix = t(norm_seqtab_18S)
-bray_matrix = vegdist(matrix, method = "bray")
-nmds_result = metaMDS(bray_matrix)
+# Similarity in sample composition 
 
-# Extract coordinates and Shannon diversity from the NMDS results
-nmds_co <- data.frame(nmds_result$points)
-shannon_val <- diversity(matrix, index = "shannon")
+matrix <- t(norm_seqtab_18S)
+
+# Calculate Bray-Curtis dissimilarity
+bray_matrix <- vegdist(matrix, method = "bray")
+
+# Perform NMDS
+nmds_result <- metaMDS(bray_matrix)
+
+# Extract coordinates and Shannon diversity from the NMDS result
+nmds_coordinates <- data.frame(nmds_result$points)
+shannon_values <- diversity(matrix, index = "shannon")
 
 # Combine NMDS coordinates and Shannon diversity values
-nmds_data <- cbind(nmds_co, Shannon_Diversity = shannon_val)
+nmds_data <- cbind(nmds_coordinates, Shannon_Diversity = shannon_values)
 
-#Plot
+# Create a plot using ggplot2
+library(ggplot2)
 final_nmds <- ggplot(nmds_data, aes(x = MDS1, y = MDS2, color = Shannon_Diversity)) +
   geom_point() +
   scale_color_gradient(name = "Shannon Diversity") +
