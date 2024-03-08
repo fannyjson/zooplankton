@@ -166,32 +166,6 @@ for (i in 1:ncol(seqtab)) {
 }
 
 
-## Sum up clade counts at each taxonomic level
-
-clade_counts = list()
-norm_clade_counts = list()
-
-for (i in 1:ncol(taxa)) {
-  matr = norm_matr = NULL
-  clade = unique(taxa[,i])
-  clade = clade[!is.na(clade)]
-  for (j in 1:length(clade)) {
-    ix = which(clade[j]==taxa[,i])
-    if (length(ix) > 1) {
-      matr = rbind(matr, apply(seqtab[ix,], 2, sum, na.rm=TRUE))
-      norm_matr = rbind(norm_matr, apply(norm_seqtab[ix,], 2, sum, na.rm=TRUE))
-    } else {
-      matr = rbind(matr, seqtab[ix,])
-      norm_matr = rbind(norm_matr, norm_seqtab[ix,])
-    }
-  }
-  rownames(matr) = rownames(norm_matr) = clade
-  colnames(matr) = colnames(norm_matr) = metadata$sample_id
-  clade_counts[[i]] = matr
-  norm_clade_counts[[i]] = norm_matr
-}
-
-
 ### Rarefaction ###
 
 ## Specify parameters
@@ -420,6 +394,3 @@ write.table(seqtab,
 
 save.image(paste('read_merged_18S_240308.RData', sep = '')) 
   
-
-
-
