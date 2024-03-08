@@ -21,6 +21,7 @@ seqtab_18S_all=read.table("C:/Users/johan/OneDrive/R/Master project/seqtab_18S_a
 #Load libraries 
 library(ggplot2)
 library(dplyr)
+library(vegan)
 
 #################################################################################
 
@@ -299,3 +300,29 @@ p<-ggplot(long_data, aes(x = Taxa, y = Value, fill = Category)) +
 print(p)
 ggsave <- function(..., bg = 'white') ggplot2::ggsave(..., bg = bg)
 ggsave("C:/Users/johan/OneDrive/R/Master project/plots/reads_distribution.png",p)
+
+############## NMDS & Shannon index for ASVs in samples ############################
+
+# Calculate Bray-Curtis dissimilarity and Shannon index
+
+matrix = t(norm_seqtab_18S)
+bray_matrix = vegdist(matrix, method = "bray")
+nmds_result = metaMDS(bray_matrix)
+
+# Extract coordinates and Shannon diversity from the NMDS results
+nmds_co <- data.frame(nmds_result$points)
+shannon_val <- diversity(matrix, index = "shannon")
+
+# Combine NMDS coordinates and Shannon diversity values
+nmds_data <- cbind(nmds_co, Shannon_Diversity = shannon_val)
+
+#Plot
+final_nmds <- ggplot(nmds_data, aes(x = MDS1, y = MDS2, color = Shannon_Diversity)) +
+  geom_point() +
+  scale_color_gradient(name = "Shannon Diversity") +
+  ggtitle("NMDS plot showing shannon diversity for ASVs in each sample")
+
+# Print the plot
+print(final_nmds)
+ggsave <- function(..., bg = 'white') ggplot2::ggsave(..., bg = bg)
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/NMDS_shannon_samples_asvs.png",p)
