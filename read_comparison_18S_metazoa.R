@@ -156,7 +156,13 @@ fractions_df=data.frame(fractions)
 rownames(fractions_df)=c("Domain", "Supergroup", "Division", "Subdivision", "Class", "Order", "Family", "Genus", "Species")
 print(fractions)
 
+# Print nr of unique taxa per level
+                   
+taxlvl_18S = taxa_18S%>%
+  summarise(across(everything(), ~length(unique(na.omit(.)))))
 
+print(taxlvl_18S)
+                   
 #################### 18S (METAZOA ONLY) #######################################
 
 #18S metazoa only
@@ -268,6 +274,11 @@ fractions_df_met=data.frame(fractions_met)
 rownames(fractions_df_met)=c("Domain", "Supergroup", "Division", "Subdivision", "Class", "Order", "Family", "Genus", "Species")
 print(fractions_met)
 
+# Print nr of unique taxa per level
+taxlvl_metazoa = taxa_metazoa%>%
+  summarise(across(everything(), ~length(unique(na.omit(.)))))
+
+print(taxlvl_metazoa)
 
 ################## PLOT ########################################################
 
@@ -301,6 +312,7 @@ p<-ggplot(long_data, aes(x = Taxa, y = Value, fill = Category)) +
 print(p)
 ggsave <- function(..., bg = 'white') ggplot2::ggsave(..., bg = bg)
 ggsave("C:/Users/johan/OneDrive/R/Master project/plots/reads_distribution.png",p)
+
 
 
 ############## NMDS & Shannon ###########################################################
