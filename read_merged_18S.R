@@ -1,4 +1,8 @@
-# PRE-PROCESSING OF DATA (KRZYZTOFS MODIFIED CODE)
+#The output from running this code is filtered metadata and seqtab tables
+#The code should be run both with all 18S included and then with metazoa only
+#The seqtab tables generated are both normalized and non-normalized
+#Original code was provided from Krzysztof Jurdzinski. The code has been modified.
+
 # SET WORKING DIRECTORY, LOAD LIBRARIES, SET IN FILES
 
 setwd("C:/Users/johan/OneDrive/R")
@@ -19,7 +23,9 @@ if(!dir.exists(plot_folder)){dir.create(plot_folder)}
 # READ 18S DATA
 
 asv = as.vector(read.csv(asv_seq_file, sep = '\t')[[2]])
+
 names(asv) = as.vector(read.csv(asv_seq_file, sep = '\t')[[1]])
+
 asv = toupper(asv)
 
 seqtab = as.matrix(read.delim(seqtab_file, row.names = 'OTU_ID'))
@@ -32,6 +38,7 @@ metadata = read_tsv(metadata_file)
 
 ix_taxa = match(rownames(seqtab), rownames(taxa))
 taxa = taxa[ix_taxa,]
+
 ix_taxa = match(rownames(seqtab), names(asv))
 asv = asv[ix_taxa]
 
@@ -44,6 +51,7 @@ colnames(seqtab) = gsub(colnames(seqtab), pattern = '^X', replacement = '')
 ## But also volume test 500ml, since that corresponds to the sampling for monioting
 
 ix_monitoring = which(metadata$group == 'Monitoring')
+
 ix_volume_test_500ml = intersect(which(metadata$group == 'volume_test'),
                                  which(metadata$sampled_volume == 500))
 
@@ -109,12 +117,10 @@ ix_taxa =  setdiff(1:nrow(taxa), spike_ix)
 ix_taxa = intersect(ix_taxa, which(complete.cases(taxa[,2])))
 
 ## Include only metazoa
-#ix_taxa = which(taxa[, 4] == 'Metazoa')
-#taxa = taxa[ix_taxa,]
-#seqtab = seqtab[ix_taxa,]
-#asv = asv[ix_taxa]
-
-
+ix_taxa = which(taxa[, 4] == 'Metazoa')
+taxa = taxa[ix_taxa,]
+seqtab = seqtab[ix_taxa,]
+asv = asv[ix_taxa]
 
 ### Analyze nr of reads per sample ###
 ### Exclude under/overssequenced samples ###
@@ -127,7 +133,7 @@ ix_2019 = which(metadata$date > as.Date('2019-01-01'))
 png(paste0(plot_folder, 'tot_reads_sorted_18S_2019.png'),
     width = 5000, height = 3000, res = 500, units = 'px')
 par(mar = c(5, 4, 4, 2) + 0.1)  # Adjusted margin for title
-plot(sort(colSums(seqtab)[ix_2019]), xlab = 'Samples', ylab = 'Reads', main = 'Total reads for samples after 2019 (All 18S)')
+plot(sort(colSums(seqtab)[ix_2019]), xlab = 'Samples', ylab = 'Reads', main = 'Total reads for samples after 2019')
 
 dev.off()
 
@@ -142,7 +148,7 @@ ix_2015 = which(metadata$date < as.Date('2019-01-01'))
 png(paste0(plot_folder, 'tot_reads_sorted_18S_2015.png'),
     width = 5000, height = 3000, res = 500, units = 'px')
 par(mar = c(5, 4, 4, 2) + 0.1)  # Adjusted margin for title
-plot(sort(colSums(seqtab)[ix_2015]), xlab = 'Samples', ylab = 'Reads', main = 'Total reads for samples before 2019 (All 18S')
+plot(sort(colSums(seqtab)[ix_2015]), xlab = 'Samples', ylab = 'Reads', main = 'Total reads for samples before 2019)
 dev.off()
 
 sort(colSums(seqtab)[ix_2015])
@@ -165,7 +171,6 @@ for (i in 1:ncol(seqtab)) {
   norm_seqtab[,i] = seqtab[,i]/sum(seqtab[,i])
 }
 
-
 ### Rarefaction ###
 
 ## Specify parameters
@@ -187,7 +192,7 @@ ix_2019 = which(metadata$date > as.Date('2019-01-01'))
   #     width = 10, height = 6)
   
   par(mar = c(4,4,2,2))
-  rarecurve(t(seqtab[,ix_2019]), step = 1000, label = FALSE, xlab = 'Sequencing depth', ylab = 'Samples', main='Rarefaction for samples after 2019 (All 18S)')
+  rarecurve(t(seqtab[,ix_2019]), step = 1000, label = FALSE, xlab = 'Sequencing depth', ylab = 'Samples', main='Rarefaction for samples after 2019')
   abline(v = m, col = "red", lty = 2)
   
   dev.off()
@@ -202,14 +207,10 @@ ix_2019 = which(metadata$date > as.Date('2019-01-01'))
   #     width = 10, height = 6)
   
   par(mar = c(4,4,2,2))
-  rarecurve(t(seqtab[,ix_2015]), step = 1000, label = FALSE, xlab = 'Sequencing depth', ylab = 'Samples' , main='Rarefaction for samples before 2019 (All 18S)')
+  rarecurve(t(seqtab[,ix_2015]), step = 1000, label = FALSE, xlab = 'Sequencing depth', ylab = 'Samples' , main='Rarefaction for samples before 2019')
   abline(v = m, col = "red", lty = 2)
   
   dev.off()
-  
-  print(sort(rareslope(t(seqtab[,ix_2015]), m)))
-  print(sort(rareslope(t(seqtab), m)))
-
 
   ### Longitude, Latitude, and Salinity -- assume station's mean if not available ###
   
@@ -332,7 +333,6 @@ ix_2019 = which(metadata$date > as.Date('2019-01-01'))
     }
     
   
-  
   ## Annotate the samples to respective seasons
   
   ## adopted from https://stackoverflow.com/questions/36502140/determine-season-from-date-using-lubridate-in-r
@@ -359,37 +359,17 @@ ix_2019 = which(metadata$date > as.Date('2019-01-01'))
   ## Get daylength
   
   metadata$day_length = daylength(metadata$Latitude, yday(metadata$date))
+
   
-  ## Set ploting theme and colors
-  
-  ## By default the plots will now have white background
-  my_theme = theme_bw() +
-    theme(
-      text = element_text(size = 16),  # Adjust font size for all text
-      plot.title = element_text(size = 18),  # Adjust font size for plot titles
-      axis.title = element_text(size = 16)  # Adjust font size for axis labels
-    )
-  
- 
-    max_tax_l = ncol(taxa)
-    bar_col = '#1c9099'
-  
-  basin_colors = c('#4d004b', '#3690c0', '#238443', '#fec44f', '#f768a1')
-  sea_basin_shape_scale = c(25, 24, 23, 22, 21)
-  names(sea_basin_shape_scale) = sea_basins
-  names(basin_colors) = sea_basins
-  
-  ## Save alfa- and beta-diversity data
-  
-#write.table(metadata,
-              #file = paste(in_folder, 'metadata_240308.tsv', sep = ''),
-              #sep = '\t', row.names = FALSE, col.names = TRUE)
+write.table(metadata,
+              file = paste(in_folder, 'metadata_240308.tsv', sep = ''),
+              sep = '\t', row.names = FALSE, col.names = TRUE)
  
 write.table(norm_seqtab,
-                file = paste(in_folder, 'norm_seqtab_18S_all_240308.tsv', sep = ''),
+                file = paste(in_folder, 'norm_seqtab_18S_240308.tsv', sep = ''),
                 sep = '\t', row.names = TRUE, col.names = TRUE)
 write.table(seqtab, 
-              file = paste(in_folder, 'seqtab_18S_all_240308.tsv', sep = ''),
+              file = paste(in_folder, 'seqtab_18S_240308.tsv', sep = ''),
               sep = '\t', row.names = TRUE, col.names = TRUE)
 
 save.image(paste('read_merged_18S_240308.RData', sep = '')) 
