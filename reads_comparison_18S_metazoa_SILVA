@@ -1,0 +1,388 @@
+# Comparison of reads from 18S and only metazoan 18S 
+# The files loaded are output files from read_merged_18S.R 
+
+setwd("C:/Users/johan/OneDrive/R/Master project") 
+
+#Taxa table
+taxa_18S=read.table("C:/Users/johan/OneDrive/R/Master project/taxa_SILVA.tsv") 
+taxa_18S = taxa_18S[!is.na(taxa_18S[, 1]), ]
+
+#Normalized seqtab table metazoa 
+norm_seqtab_18S=read.table("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_18S_meta_SILVA.tsv")
+
+#Normalized seqtab all 
+norm_seqtab_18S_all=read.table("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_18S_all_SILVA.tsv")
+
+#Original seqtab metazoa
+seqtab_18S=read.table("C:/Users/johan/OneDrive/R/Master project/seqtab_18S_meta_SILVA.tsv")
+
+#Original seqtab all
+seqtab_18S_all=read.table("C:/Users/johan/OneDrive/R/Master project/seqtab_18S_all_SILVA.tsv")
+
+#Load libraries 
+library(ggplot2)
+library(dplyr)
+library(vegan)
+
+#################################################################################
+
+#Fix sample names 
+
+colnames(norm_seqtab_18S) = gsub(colnames(norm_seqtab_18S), pattern = '^X', replacement = '')
+colnames(norm_seqtab_18S_all) = gsub(colnames(seqtab_18S_all), pattern = '^X', replacement = '')
+
+colnames(seqtab_18S) = gsub(colnames(seqtab_18S), pattern = '^X', replacement = '')
+colnames(seqtab_18S_all) = gsub(colnames(seqtab_18S_all), pattern = '^X', replacement = '')
+
+replace_xx <- function(vector) {
+  gsub("(_X|_XX)", "", vector)
+}
+
+taxa_18S[] <- lapply(taxa_18S, replace_xx)
+
+replace <- function(vector) {
+  gsub("_", " ", vector)
+}
+
+
+taxa_18S[] <- lapply(taxa_18S, replace)
+
+########################## #18S ALL ############################################
+
+#Make plot of relative abundance of for different taxa levels 
+#Match seqtab with taxa table
+#Loop through each column of seqtab_processed and store indices>0. 
+
+taxa_list=list()
+
+for (i in 1:ncol(seqtab_18S_all)) {
+  present_indices=which(seqtab_18S_all[,i] > 0)
+  
+  if (length(present_indices)>0) {
+    present_asvs=rownames(seqtab_18S_all)[present_indices]
+    
+    if(any(present_asvs %in% rownames(taxa_18S))){
+      present_asvs=present_asvs[present_asvs %in% rownames(taxa_18S)]
+      
+      present_taxa=taxa_18S[rownames(taxa_18S) %in% present_asvs,]
+      taxa_list[[i]]=data.frame(sample_id=colnames(seqtab_18S_all)[i],ASV=present_asvs,
+                                Taxa=present_taxa)
+    }
+  }
+}
+
+
+#Number of reads for 18S (annotated)
+all_reads=sum(seqtab_18S_all)
+
+#Summarising counts at different taxonomic levels
+#Normalized clade count
+
+clade_counts_norm=list()
+
+for (i in 1:ncol(taxa_18S)){
+  matr_norm=NULL
+  clade=unique(taxa_18S[,i])
+  clade=clade[!is.na(clade)]
+  for (j in 1:length(clade)){
+    ix=which(clade[j]==taxa_18S[,i])
+    if (length(ix)>1){
+      matr_norm=rbind(matr_norm, apply(norm_seqtab_18S_all[ix,],2,sum,na.rm=TRUE))
+    } else {
+      matr_norm=rbind(matr_norm, norm_seqtab_18S_all[ix,])
+    }
+  }
+  rownames(matr_norm)=clade
+  
+  clade_counts_norm[[i]]=matr_norm
+}
+
+matr_norm[is.na(matr_norm)]=0
+matr_norm=matr_norm[rowSums(matr_norm !=0, na.rm=TRUE)>0 , , drop=FALSE]
+
+#Non-normalized clade count
+
+clade_counts=list()
+
+for (i in 1:ncol(taxa_18S)){
+  matr=NULL
+  clade=unique(taxa_18S[,i])
+  clade=clade[!is.na(clade)]
+  for (j in 1:length(clade)){
+    ix=which(clade[j]==taxa_18S[,i])
+    if (length(ix)>1){
+      matr=rbind(matr, apply(seqtab_18S_all[ix,],2,sum,na.rm=TRUE))
+    } else {
+      matr=rbind(matr, seqtab_18S_all[ix,])
+    }
+  }
+  rownames(matr)=clade
+  #colnames(matr)=colnames(matr)=sample_id
+  
+  clade_counts[[i]]=matr
+}
+
+matr[is.na(matr)]=0
+matr=matr[rowSums(matr !=0, na.rm=TRUE)>0 , , drop=FALSE]
+
+
+
+# Total reads for each taxa (18S)
+
+kingdom_reads = na.omit(clade_counts[[1]])
+kingdom_reads=sum(kingdom_reads)
+
+phylum_reads = na.omit(clade_counts[[2]])
+phylum_reads = sum(phylum_reads)
+
+class_reads = na.omit(clade_counts[[3]])
+class_reads = sum(class_reads)
+
+order_reads = na.omit(clade_counts[[4]])
+order_reads = sum(order_reads)
+
+family_reads = na.omit(clade_counts[[5]])
+family_reads = sum(family_reads)
+
+genus_reads = na.omit(clade_counts[[6]])
+genus_reads = sum(genus_reads)
+
+species_reads = na.omit(clade_counts[[7]])
+species_reads = sum(species_reads)
+
+
+# Create a list to store taxonomic levels and sums
+taxonomic_levels <- list()
+taxonomic_sums <- list()
+
+# Loop through each clade_counts element
+for (i in 1:7) {
+  # Extract clade counts
+  clade <- clade_counts[[i]]
+  
+  # Convert to data frame and remove NAs
+  clade_df <- na.omit(data.frame(clade))
+  
+  # Calculate sum for each taxonomic level
+  taxonomic_sums[[i]] <- sum(unlist(clade_df), na.rm = TRUE)
+  
+  # Store taxonomic levels
+  taxonomic_levels[[i]] <- clade_df
+}
+
+# Calculate sum of all reads
+sum_domain_reads <- sum(unlist(taxonomic_sums), na.rm = TRUE)
+
+# Calculate fractions
+fractions <- sapply(taxonomic_sums, function(category_sums) category_sums / taxonomic_sums[[1]] * 100)
+# Create a data frame with row names
+fractions_df <- data.frame(fractions)
+rownames(fractions_df) <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+
+print(fractions_df)
+
+
+#################### 18S (METAZOA ONLY) #######################################
+
+#18S metazoa only
+taxa_metazoa = taxa_18S[taxa_18S[, 4] == "Metazoa (Animalia)", ]
+taxa_metazoa = taxa_metazoa[!is.na(taxa_metazoa[, 1]), ]
+write.table(taxa_metazoa, "C:/Users/johan/OneDrive/R/Master project/taxa_metazoa_SILVA.tsv", sep="\t")
+
+meta_taxa_list=list()
+
+for (i in 1:ncol(seqtab_18S)) {
+  present_indices=which(seqtab_18S[,i] > 0)
+  
+  if (length(present_indices)>0) {
+    present_asvs=rownames(seqtab_18S)[present_indices]
+    
+    if(any(present_asvs %in% rownames(taxa_metazoa))){
+      present_asvs=present_asvs[present_asvs %in% rownames(taxa_metazoa)]
+      
+      present_taxa=taxa_metazoa[rownames(taxa_metazoa) %in% present_asvs,]
+      taxa_list[[i]]=data.frame(sample_id=colnames(seqtab_18S)[i],ASV=present_asvs,
+                                Taxa=present_taxa)
+    }
+  }
+}
+
+#Number of reads for metazoa
+metazoa_reads=sum(seqtab_18S)
+
+#Summarising counts at different taxonomic levels
+
+norm_meta_clade_counts=list()
+
+for (i in 1:ncol(taxa_metazoa)){
+  norm_meta_matr=NULL
+  clade=unique(taxa_metazoa[,i])
+  clade=clade[!is.na(clade)]
+  for (j in 1:length(clade)){
+    ix=which(clade[j]==taxa_metazoa[,i])
+    if (length(ix)>1){
+      norm_meta_matr=rbind(norm_meta_matr, apply(norm_seqtab_18S[ix,],2,sum,na.rm=TRUE))
+    } else {
+      norm_meta_matr=rbind(norm_meta_matr, norm_seqtab_18S[ix,])
+    }
+  }
+  
+  rownames(norm_meta_matr)=clade
+  #colnames(matr)=colnames(norm_matr)=sample_id
+  
+  norm_meta_clade_counts[[i]]=norm_meta_matr
+}
+
+norm_meta_matr[is.na(norm_meta_matr)]=0
+norm_meta_matr=norm_meta_matr[rowSums(norm_meta_matr !=0, na.rm=TRUE)>0 , , drop=FALSE]
+
+#Non-normalized
+
+meta_clade_counts=list()
+
+for (i in 1:ncol(taxa_metazoa)){
+  meta_matr=NULL
+  clade=unique(taxa_metazoa[,i])
+  clade=clade[!is.na(clade)]
+  for (j in 1:length(clade)){
+    ix=which(clade[j]==taxa_metazoa[,i])
+    if (length(ix)>1){
+      meta_matr=rbind(meta_matr, apply(seqtab_18S[ix,],2,sum,na.rm=TRUE))
+    } else {
+      meta_matr=rbind(meta_matr, seqtab_18S[ix,])
+    }
+  }
+  
+  rownames(meta_matr)=clade
+  
+  meta_clade_counts[[i]]=meta_matr
+}
+
+
+meta_matr[is.na(meta_matr)]=0
+meta_matr=matr[rowSums(meta_matr !=0, na.rm=TRUE)>0 , , drop=FALSE]
+
+metazoa_reads=sum(seqtab_18S)
+
+
+
+
+# Total reads for each taxa (18S)
+
+
+kingdom_reads_meta = na.omit(meta_clade_counts[[1]])
+kingdom_reads_meta=sum(kingdom_reads_meta)
+
+phylum_reads_meta = na.omit(meta_clade_counts[[2]])
+phylum_reads_meta = sum(phylum_reads_meta)
+
+class_reads_meta = na.omit(meta_clade_counts[[3]])
+class_reads_meta = sum(class_reads_meta)
+
+order_reads_meta = na.omit(meta_clade_counts[[4]])
+order_reads_meta = sum(order_reads_meta)
+
+family_reads_meta = na.omit(meta_clade_counts[[5]])
+family_reads_meta = sum(family_reads_meta)
+
+genus_reads_meta = na.omit(meta_clade_counts[[6]])
+genus_reads_meta = sum(genus_reads_meta)
+
+species_reads_meta = na.omit(meta_clade_counts[[7]])
+species_reads_meta = sum(species_reads_meta)
+
+# Create a list to store taxonomic levels and sums
+taxonomic_levels_meta <- list()
+taxonomic_sums_meta <- list()
+
+# Loop through each clade_counts element
+for (i in 1:7) {
+  # Extract clade counts
+  clade_meta <- meta_clade_counts[[i]]
+  
+  # Convert to data frame and remove NAs
+  clade_df_meta <- na.omit(data.frame(clade_meta))
+  
+  # Calculate sum for each taxonomic level
+  taxonomic_sums_meta[[i]] <- sum(unlist(clade_df_meta), na.rm = TRUE)
+  
+  # Store taxonomic levels
+  taxonomic_levels_meta[[i]] <- clade_df_meta
+}
+
+# Calculate sum of all reads
+sum_domain_reads_meta <- sum(unlist(taxonomic_sums_meta), na.rm = TRUE)
+
+# Calculate fractions
+fractions_meta <- sapply(taxonomic_sums_meta, function(category_sums_meta) category_sums_meta / taxonomic_sums_meta[[1]] * 100)
+# Create a data frame with row names
+fractions_df_meta <- data.frame(fractions_meta)
+rownames(fractions_df_meta) <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+
+print(fractions_df_meta)
+
+
+################## PLOT ########################################################
+
+# Merge
+merged_fractions = merge(fractions_df, fractions_df_meta, by = "row.names", all = TRUE)
+colnames(merged_fractions)[colnames(merged_fractions)=="Row.names"]="Taxa"
+colnames(merged_fractions)[colnames(merged_fractions)=="fractions"]="All 18S"
+colnames(merged_fractions)[colnames(merged_fractions)=="fractions_meta"]="Metazoa"
+
+library(ggplot2)
+library(tidyr)
+
+long_data = gather(merged_fractions, key = "Category", value = "Value", -Taxa)
+taxa_order = c("Kingdom", "Phylum", "Class", "Order", "Family","Genus", "Species")
+long_data$Taxa <- factor(as.character(long_data$Taxa), levels = taxa_order)
+
+windows()
+p<-ggplot(long_data, aes(x = Taxa, y = Value, fill = Category)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.5, color = "black") +
+  labs(title = "Relative abundance of annotated reads per taxa level",
+       x = "Taxa",
+       y = "%") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10, color = "black"),
+        legend.position = "right",
+        plot.title = element_text(hjust = 0.5),
+        axis.text.y = element_text(size = 10),
+        legend.text = element_text(size = 10)) +
+  scale_fill_manual(values = c("Metazoa" = '#636363', "All 18S" = '#bdbdbd'))
+print(p)
+ggsave <- function(..., bg = 'white') ggplot2::ggsave(..., bg = bg)
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/reads_distribution_SILVA.png",p)
+
+
+############## NMDS & Shannon ###########################################################
+
+#Similarity in sample composition 
+
+matrix <- t(norm_seqtab_18S)
+
+# Calculate Bray-Curtis dissimilarity
+bray_matrix <- vegdist(matrix, method = "bray")
+
+# Perform NMDS
+nmds_result <- metaMDS(bray_matrix)
+
+# Extract coordinates and Shannon diversity from the NMDS result
+nmds_coordinates <- data.frame(nmds_result$points)
+shannon_values <- diversity(matrix, index = "shannon")
+
+# Combine NMDS coordinates and Shannon diversity values
+nmds_data <- cbind(nmds_coordinates, Shannon_Diversity = shannon_values)
+
+windows()
+final_nmds <- ggplot(nmds_data, aes(x = MDS1, y = MDS2, color = Shannon_Diversity)) +
+  geom_point() +
+  scale_color_gradient(name = "Shannon Diversity", low = "black", high = "white") +  # Grayscale color scale
+  ggtitle("NMDS plot showing Shannon Diversity for ASVs in each sample (SILVA)") +
+  theme_bw()  # Set theme to black and white (optional)
+
+# Print the plot
+print(final_nmds)
+
+ggsave <- function(..., bg = 'white', width = 10, height = 6, units = "in") ggplot2::ggsave(..., bg = bg)
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/NMDS_shannon_samples_asvs_SILVA.png",final_nmds)
