@@ -5,19 +5,19 @@ setwd("C:/Users/johan/OneDrive/R/Master project")
 #Load files and libraries
 
 #Metazoa only
-taxa_metazoa=read.table("C:/Users/johan/OneDrive/R/Master project/taxa_metazoa.csv", sep = "\t", header = TRUE)
+taxa_metazoa=read.delim("C:/Users/johan/OneDrive/R/Master project/taxa_metazoa.tsv")
 
 #Normalized seqtab metazoa
-seqtab_processed=read.table("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_18S_240308.tsv")
+seqtab_processed=read.delim("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_18S_240308.tsv")
 
 #Metadata
-metadata_processed=read.csv("C:/Users/johan/OneDrive/R/Master project/metadata_240308.tsv", sep = "\t")
+metadata_processed=read.delim("C:/Users/johan/OneDrive/R/Master project/metadata_240308.tsv")
 
 #SMHI data
 smhi_data=read.table("C:/Users/johan/OneDrive/R/Master project/zooplankton_2015_2020_2024-01-25_utf8.txt", header = TRUE, sep = "\t")
 
 #Count table 
-count_microscopy=read.table("C:/Users/johan/OneDrive/R/Master project/count_table_zooplankton_genus.tsv", sep="\t")
+count_microscopy=read.delim("C:/Users/johan/OneDrive/R/Master project/count_table_zooplankton_genus.tsv")
 
 colnames(count_microscopy) = gsub(colnames(count_microscopy), pattern = '^X', replacement = '')
 colnames(count_microscopy) = gsub(colnames(count_microscopy), pattern = '\\.', replacement = '-')
@@ -27,15 +27,31 @@ colnames(seqtab_processed) = gsub(colnames(seqtab_processed), pattern = '\\.', r
 
 library(dplyr)
 library(lubridate)
-library(purrr)
 library(tidyr)
 library(ggplot2)
 library(VennDiagram)
 
 ############### MERGE METADATA AND GENUS #######################################
 #Only keep one taxa level 
+taxa_class=taxa_metazoa[,5, drop=FALSE]
+taxa_class=na.omit(taxa_class)
+taxa_class_unique=unique(taxa_class)
+
+taxa_order=taxa_metazoa[,6, drop=FALSE]
+taxa_order=na.omit(taxa_order)
+taxa_order_unique=unique(taxa_order)
+
+taxa_family=taxa_metazoa[,7, drop=FALSE]
+taxa_family=na.omit(taxa_family)
+taxa_family_unique=unique(taxa_family)
+                         
 taxa_genus= taxa_metazoa[,8, drop=FALSE]
 taxa_genus= na.omit(taxa_genus)
+taxa_genus_unique=unique(taxa_genus)
+
+taxa_species=taxa_metazoa[,9, drop=FALSE]
+taxa_species=na.omit(taxa_species)
+taxa_species_unique=unique(taxa_species)
 
 #Loop through each column of seqtab_processed and store indices>0. 
 #The corresponding ASVs for each sample and genera are stored in taxa_metabar. 
@@ -148,7 +164,7 @@ metabar_df = metabar_df[metabar_df$sample %in% common_samples, ]
 smhi_data = smhi_data[smhi_data$sample %in% common_samples, ]
 
 
-write.table(metabar_df, "C:/Users/johan/OneDrive/R/Master project/merged_df_all.tsv", sep="\t")
+write.table(smhi_data, "C:/Users/johan/OneDrive/R/Master project/smhi_data_commonsamples", sep="\t")
 
 
 # genus_df with genus and asv column
@@ -165,7 +181,6 @@ seqtab_processed_subset=seqtab_processed[matching_asvs, ]
 # Combine data frames without row names causing issues
 new_seqtab=cbind(genus_df, seqtab_processed_subset)
 
-
 # Make seqtab with genus instead of asvs and only for common samples
 common_columns=intersect(colnames(new_seqtab), colnames(count_microscopy))
 keep_col=c("Genus",common_columns)
@@ -174,10 +189,17 @@ new_seqtab_genus = aggregate(. ~ Genus, data = new_seqtab, FUN = sum)
 rownames(new_seqtab_genus) = new_seqtab_genus$Genus
 new_seqtab_genus=new_seqtab_genus[,-1]
 count_microscopy=count_microscopy[,common_columns,drop=FALSE]
+count_microscopy = count_microscopy %>%
+  filter(rowSums(. != 0, na.rm = TRUE) > 0)
 
-metabar_df=metabar_df[metabar_df$Genus %in% rownames(count_microscopy), , drop=FALSE]
+#Save combined metadata/genus df and relative abundance df for genera 
+write.table(metabar_df, "C:/Users/johan/OneDrive/R/Master project/merged_metabar_all_genera.tsv", sep="\t")
+write.table(count_microscopy, "C:/Users/johan/OneDrive/R/Master project/count_microscopy_commonsamples.tsv", sep="\t")
+write.table(new_seqtab_genus, "C:/Users/johan/OneDrive/R/Master project/new_seqtab_genus.tsv", sep="\t")
 
+#Only common genera included
 
-write.table(metabar_df, "C:/Users/johan/OneDrive/R/Master project/merged_df_common_genus", sep="\t")
-write.table(new_seqtab_genus, "C:/Users/johan/OneDrive/R/Master project/new_seqtab_genus", sep="\t")
-write.table(count_microscopy, "C:/Users/johan/OneDrive/R/Master project/count_microscopy_commonsamples", sep="\t")
+metabar_df=metabar_df[metabar_df$Genus %in% rownames(count_microscopy), , drop=FALSE] 
+write.table(metabar_df, "C:/Users/johan/OneDrive/R/Master project/merged_metabar_common_genera.tsv", sep="\t")
+new_seqtab_common_genus=new_seqtab_genus[rownames(new_seqtab_genus) %in% rownames(count_microscopy), , drop=FALSE]
+write.table(new_seqtab_common_genus, "C:/Users/johan/OneDrive/R/Master project/new_seqtab_common_genus.tsv", sep="\t")
