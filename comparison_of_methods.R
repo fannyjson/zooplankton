@@ -80,8 +80,9 @@ merged_df$Month=all_merged_metabar_df$month[match(merged_df$Sample, all_merged_m
 
 
 
-####################### BAR PLOTS (STATION) ##################################################
+####################### BAR PLOTS (STATION) ###################################################################
 
+## stations=c("BY2 (263725)", "BY15 (263730)", "B1 (263738)", "BY31 (263732)", "REF M1V1 (263729)", "BY5 (263728)", "Å17 (264194)", "ANHOLT E (264876)", "N14 (263903)", "SLÄGGÖ (263628)", "GA1 (263757)", "C3 (190745)", "B7 (263629)", "RA2 (263856)")
 
 # Grouped stacked bar plot
 my_df=merged_df
@@ -117,6 +118,10 @@ df_long$Label <- paste(df_long$Sample, df_long$Method, sep = " - ")
 
 df_long = subset(df_long, select = -c(Microscopy, Metabarcoding) )
 df_long$Sample <- gsub(paste0(the_station, "_"), "", df_long$Sample)
+df_long <- df_long %>%
+  group_by(Month, Method, Sample, Genus, Station, Salinity) %>%
+  summarize(Relative_Abundance = sum(Relative_Abundance)) %>%
+  filter(Relative_Abundance > 0.005)
 
 library(viridis)
 
@@ -132,17 +137,15 @@ p <- ggplot(df_long, aes(x = Sample, y = Relative_Abundance, fill = Genus)) +
         plot.title = element_text(hjust = 0.5),
         axis.text.y = element_text(size = 5),
         legend.text = element_text(size = 8)) +
-  scale_fill_viridis(discrete=TRUE)
-  #scale_fill_manual(values = myCol)  # Use scale_fill_manual for fill colors
+  scale_fill_manual(values = myCol)
 
 print(p)
 
-ggsave("C:/Users/johan/OneDrive/R/Master project/plots/comparison_264194_all.png", p, width = 10, height = 5, bg = 'white')
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/comparison_264194_0.005.png", p, width = 10, height = 5, bg = 'white')
 
 
 
-
-################# SCATTER PLOTS ################################################
+################# SCATTER PLOT GENERA - NOT AVERAGED ################################################
 
 merged_df <- merged_df %>%
   group_by(Sample) %>%
@@ -152,9 +155,8 @@ merged_df <- merged_df %>%
 genus_counts <- merged_df %>%
   group_by(Genus) %>%
   summarize(counts = sum(Microscopy_count), reads = sum(Reads))
-  
 
-# Identify genera that appear more than 10 times
+# Identify genera that appear more than 20 times
 genera_to_keep = genus_counts %>%
   filter(counts > 20) %>%
   pull(Genus)
@@ -189,7 +191,7 @@ q <- ggplot(final_df, aes(x = Relative_abundance_microscopy, y = Relative_abunda
         plot.title = element_text(size = 14, face = "bold"))
 
 print(q)
-ggsave("C:/Users/johan/OneDrive/R/Master project/plots/scatter_genera_test.png", q, width = 30, height = 20, bg = 'white')
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/scatter_genera.png", q, width = 30, height = 20, bg = 'white')
 
 ###################### SCATTER PLOT - MEAN RELATIVE ABUNANCE (ALL STATIONS) #######
 
@@ -198,8 +200,8 @@ merged_df=merged_df %>%
 
 total_abundances=merged_df %>%
   group_by(Genus, Station) %>%
-  summarise(Total_microscopy = sum(Relative_abundance_microscopy),
-            Total_metabarcoding = sum(Relative_abundance_reads))
+  summarise(Total_microscopy = sum(Relative_abundance_microscopy)/14,
+            Total_metabarcoding = sum(Relative_abundance_reads)/14)
 
 
 overall_correlation=total_abundances %>%
@@ -224,13 +226,12 @@ q <- ggplot(total_abundances, aes(x =Total_microscopy , y = Total_metabarcoding)
         plot.title = element_text(size = 14, face = "bold"))
 
 print(q)
-ggsave("C:/Users/johan/OneDrive/R/Master project/plots/scatter_genera_avg1.png", q, width = 35, height = 25, bg = 'white')
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/scatter_genera_avg123.png", q, width = 35, height = 25, bg = 'white')
 
-################################## SCATTER PLOTS - SAVE SEPARATELY ###############
-
+################################## SCATTER PLOTS - ONE PLOT FOR EACH GENUS ###############
 genera_list = unique(scatter_df$Genus)
 
-# Loop through each genus, create a plot, and save it
+# Loop through every genus, create a plot, and save it
 for (genus in genera_list) {
   # Subset data for the current genus
   genus_data = subset(scatter_df, Genus == genus)
@@ -254,12 +255,11 @@ for (genus in genera_list) {
   # Save the plot with a unique name based on genus
   ggsave(paste0("C:/Users/johan/OneDrive/R/Master project/plots/scatter_", gsub(" ", "_", genus), "_avg.png"), q, width = 10, height = 10, bg = 'white')
 }
-###################### BAR PLOT (ONE BAR PER STATION, ALL YEARS) ##########################
+###################### BAR PLOT - ONE BAR PER STATION (ALL YEARS/ONE YEAR) ##########################
 
 #Only keep one year
 #merged_df <- merged_df %>%
   #filter(str_detect(Sample, "2020"))
-
 
 merged_df <- merged_df %>%
   group_by(Station) %>%
@@ -299,9 +299,7 @@ df_long$Label <- paste(df_long$Sample, df_long$Method, sep = " - ")
 
 df_long = subset(df_long, select = -c(Microscopy, Metabarcoding) )
 
-stations=c("BY2 (263725)", "BY15 (263730)", "B1 (263738)", "BY31 (263732)", "REF M1V1 (263729)", "BY5 (263728)", "Å17 (264194)", "ANHOLT E (264876)", "N14 (263903)", "SLÄGGÖ (263628)", "GA1 (263757)", "C3 (190745)", "B7 (263629)", "RA2 (263856)")
 
-p <- ggplot(df_long, aes(x = reorder(Station, Salinity), y = Relative_Abundance, fill = Genus)) +
   geom_bar(stat = "identity", position = "stack") +
   facet_wrap(~ Method, scales = "free_y") +
   labs(title = "Community composition at common stations",
@@ -351,6 +349,7 @@ grid.draw(venn.plot)
 ggsave("C:/Users/johan/OneDrive/R/Master project/plots/venn_diagram.png", venn.plot, width = 5, height = 5, bg = 'white')
 
 ############## TOTAL MICROSCOPY COUNTS IN COMMON SAMPLES #######################
+
 count_microscopy[] <- lapply(count_microscopy, as.numeric)
 sums_count = rowSums(count_microscopy, na.rm=TRUE)
 total_count = data.frame(row.names = rownames(count_microscopy), Sum=sums_count )
@@ -374,17 +373,15 @@ p<-ggplot(total_count, aes(x = reorder(row.names(total_count), -Sum), y = Sum)) 
 print(p)
 ggsave("C:/Users/johan/OneDrive/R/Master project/plots/bar_count.png", p, width = 10, height = 5, bg = 'white')
 
-###################### BAR PLOT MONTH ########################################
+
+###################### BAR PLOT - MONTHS ########################################
+
 
 # Calculate relative abundance columns
 months_df = merged_df %>%
   group_by(Month) %>%
   mutate(Relative_abundance_microscopy = Microscopy_count / sum(Microscopy_count),
-         Relative_abundance_reads = Reads / sum(Reads)) %>%
-  filter(
-    Relative_abundance_microscopy >= 0.01,
-    Relative_abundance_reads >= 0.01
-  ) 
+         Relative_abundance_reads = Reads / sum(Reads))
 
 names(months_df)[names(months_df) == "Microscopy_count"] <- "Microscopy"
 names(months_df)[names(months_df) == "Reads"] <- "Metabarcoding"
@@ -410,10 +407,15 @@ df_long = subset(df_long, select = -c(Microscopy, Metabarcoding) )
 
 df_long$Month <- factor(df_long$Month, levels = c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"))
 
+df_long <- df_long %>%
+  group_by(Month, Method, Genus, Station, Salinity) %>%
+  summarize(Relative_Abundance = sum(Relative_Abundance)) %>%
+  filter(Relative_Abundance > 0.005)
+
 p <- ggplot(df_long, aes(x = Month, y = Relative_Abundance, fill = Genus)) +
   geom_bar(stat = "identity", position = "stack") +
   facet_wrap(~ Method, scales = "free_y") +
-  labs(title = "Community composition by month",
+  labs(title = "Temporal variation of microbial composition across samples",
        x = "Month", y = "Relative abundance") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 5, color = "black"),
@@ -425,7 +427,43 @@ p <- ggplot(df_long, aes(x = Month, y = Relative_Abundance, fill = Genus)) +
 
 print(p)
 
-ggsave("C:/Users/johan/OneDrive/R/Master project/plots/comparison_months_0.01_both.png", p, width = 15, height = 7, bg = 'white')
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/comparison_months_0.005.png", p, width = 15, height = 7, bg = 'white')
+
+
+############## NMDS FOR STATIONS (NOT DONE)####################################################################
+
+merged_df$Station <- as.numeric(merged_df$Station)
+
+# Create separate dataframes for metabarcoding and microscopy data
+metabarcoding_data <- merged_df[, c("Sample", "Genus", "Station", "Reads", "Month")]
+microscopy_data <- merged_df[, c("Sample", "Genus", "Station", "Microscopy_count", "Month")]
+
+month_names <- c("January", "February", "March", "April", "May", "June", 
+                 "July", "August", "September", "October", "November", "December")
+
+# Create a mapping between month names and numeric values
+month_mapping <- setNames(1:12, month_names)
+
+metabarcoding_data <- metabarcoding_data[metabarcoding_data$Reads > 0, ]
+
+bray_curtis_metabarcoding <- vegdist(metabarcoding_data[, c("Reads", "Station")], method = "bray")
+
+# Run NMDS for metabarcoding data
+metabarcoding_nmds <- metaMDS(bray_curtis_metabarcoding)
+
+# Convert NMDS results to data frame
+metabarcoding_plot_data <- data.frame(metabarcoding_nmds$points, Station = metabarcoding_data$Station)
+
+# Plot NMDS ordination for metabarcoding data using ggplot2
+ggplot(metabarcoding_plot_data, aes(x = NMDS1, y = NMDS2, color = Genus, shape = as.factor(Station))) +
+  geom_point() +
+  labs(color = "Genus", shape = "Station") +
+  theme_minimal() +
+  ggtitle("NMDS Plot for Metabarcoding Data (Bray-Curtis)")
+
+# Assessing the NMDS results
+stress_value <- metabarcoding_nmds$stress
+print(paste("Stress value:", stress_value))
 
 
 
