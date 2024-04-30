@@ -298,7 +298,6 @@ p = ggplot(nmds_data, aes(x = MDS1, y = MDS2, color = Shannon_Diversity)) +
   ggtitle("NMDS plot showing Shannon Diversity for ASVs in each sample (SILVA)") +
   theme_bw()  # Set theme to black and white (optional)
 
-# Print the plot
 print(p)
 
 ggsave = function(..., bg = 'white') ggplot2::ggsave(..., bg = bg)
