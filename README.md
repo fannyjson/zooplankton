@@ -1,4 +1,5 @@
 Welcome! 
+
 This is the GitHub page for my master project "Using metabarcoding data to elucidate spatiotemporal distribution
 patterns of zooplankton in the Baltic Sea area", where I explore metabarcoding and microscopy data (years 2015-2020). 
 The project was conducted at SciLifeLab in The Environmental Genomics group.
@@ -12,11 +13,9 @@ The code is organised according to following steps:
    "reads_comparisons_18S_metazoa_SILVA.R" - Investigation of the distribution of annotated reads for different taxonomic levels for all 18S vs. metazoa in SILVA.
    (The codes are similar)
 
-5. "count_table_zooplankton.R" - Summarized observations of genus/specie in each sample for microscopy data obtained from SHARKweb. 
+3. "count_table_zooplankton.R" - Summarized observations of genus/specie in each sample for microscopy data obtained from SHARKweb. 
 
-6. "common_samples.R" - 
+4. "common_samples.R" - processing of data for common samples. NMDS for microscopy and metabarcoding genera/ASVs. 
 
-7. comparison_of_methods
+5. "comparison_of_methods" - comparative barplots for microscopy and metabarcoding and scatter plots. 
 
-All the best, 
-Fanny Johansson 
