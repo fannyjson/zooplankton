@@ -1,47 +1,35 @@
 # Comparison of reads from 18S and only metazoan 18S 
 # The files loaded are output files from read_merged_18S.R 
 
-# Comparison of reads from all 18S and only metazoa 18S metabarcoding data
-# The files loaded are output files from read_merged_18S.R 
-
 setwd("C:/Users/johan/OneDrive/R/Master project") 
 
 #Taxa table
 
-taxa_18S=read.table("C:/Users/johan/OneDrive/R/Master project/taxa_18S.tsv") 
+taxa_18S=read.table("C:/Users/johan/OneDrive/R/Master project/taxa_SILVA.tsv") 
 
-#Normalized seqtab table metazoa only
+#Normalized seqtab table metazoa 
 
-norm_seqtab_18S=read.table("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_metazoa_processed.tsv")
+norm_seqtab_18S=read.table("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_metazoa_silva_processed.tsv")
 
-#Normalized seqtab all 18S
+#Normalized seqtab all 
 
-norm_seqtab_18S_all=read.table("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_18S_processed.tsv")
+norm_seqtab_18S_all=read.table("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_18S_silva_processed.tsv")
 
-#Original seqtab metazoa only
+#Original seqtab metazoa
 
-seqtab_18S=read.table("C:/Users/johan/OneDrive/R/Master project/seqtab_metazoa_processed.tsv")
+seqtab_18S=read.table("C:/Users/johan/OneDrive/R/Master project/seqtab_metazoa_silva_processed.tsv")
 
-#Original seqtab all 18S
+#Original seqtab all
 
-seqtab_18S_all=read.table("C:/Users/johan/OneDrive/R/Master project/seqtab_18S_processed.tsv")
+seqtab_18S_all=read.table("C:/Users/johan/OneDrive/R/Master project/seqtab_18S_silva_processed.tsv")
 
 #Load libraries 
-
 library(ggplot2)
 library(dplyr)
 library(vegan)
 library(tidyr)
 
-#Remove rows with NA on domain level
-
-taxa_18S = taxa_18S[!is.na(taxa_18S[, 1]), ]
-
-#Only keep ASVs found in both taxa_18S and seqtab
-
-ix=rownames(seqtab_18S_all)
-
-taxa_18S = taxa_18S[ix %in% rownames(taxa_18S), ]
+#################################################################################
 
 #Fix sample names 
 
@@ -64,18 +52,22 @@ replace = function(vector) {
 
 taxa_18S[] = lapply(taxa_18S, replace)
 
+########################## Non-metazoa ############################################
+#Keep non-metazoa
+taxa_18S = taxa_18S[!taxa_18S[, 4] == "Metazoa", ]
+
+#Only keep ASVs found in both taxatable and seqtab
+
+ix=rownames(seqtab_18S_all)
+taxa_18S = taxa_18S[ix %in% rownames(taxa_18S), ]
 
 
-########################## INVESTIGATE 18S DATA ################################
-
-
-#Number of total reads annotated for 18S
+#Number of reads for 18S (annotated)
 
 all_reads=sum(seqtab_18S_all)
-
 print(all_reads)
 
-#Summarising counts at different taxonomic levels 
+#Summarising counts at different taxonomic levels
 #Non-normalized clade count
 
 clade_counts=list()
@@ -100,74 +92,70 @@ matr[is.na(matr)]=0
 matr=matr[rowSums(matr !=0, na.rm=TRUE)>0 , , drop=FALSE]
 
 
-#Total reads for each taxa level
+# Total reads for each taxa (18S)
 
-reads = lapply(1:9, function(i) sum(na.omit(clade_counts[[i]])))
+
+reads = lapply(1:7, function(i) sum(na.omit(clade_counts[[i]])))
 
 reads_df = data.frame(
-  clade = c("Domain", "Supergroup", "Division", "Subdivision", 
-                  "Class", "Order", "Family", "Genus", "Species"),
-  
+  clade = c("Domain", "Superkingdom", "Kingdom", "Subgroup", 
+             "Family", "Genus", "Species"),
   Reads = unlist(reads)
 )
 
 print(reads_df)
 
-
-#Loop through clade counts to get the sum of reads for each taxonomic level 
+#Loop through clade counts
 
 taxonomic_levels = list()
-taxonomic_sums =list()
+taxonomic_sums = list()
 
-
-for (i in 1:9) {
-  
+for (i in 1:7) {
+  # Extract clade counts
   clade = clade_counts[[i]]
+  
+  # Convert to data frame and remove NAs
   clade_df = na.omit(data.frame(clade))
+  
+  # Calculate sum for each taxonomic level
   taxonomic_sums[[i]] = sum(unlist(clade_df), na.rm = TRUE)
+  
+  # Store taxonomic levels
   taxonomic_levels[[i]] = clade_df
 }
 
-#Calculate sum of all reads
-
-sum_domain_reads=sum(unlist(taxonomic_sums), na.rm = TRUE)
-
-#Calculate fractions
+# Calculate fractions
 
 fractions = sapply(taxonomic_sums, function(category_sums) category_sums / taxonomic_sums[[1]] * 100)
 
-#Create a data frame fractions for each taxonomic level 
+#Make dataframe with fractions
 
 fractions_df = data.frame(fractions)
-rownames(fractions_df) = c("Domain", "Supergroup", "Division", "Subdivision", "Class", "Order", "Family", "Genus", "Species")
+rownames(fractions_df) = c("Domain", "Superkingdom", "Kingdom", "Subgroup", "Family", "Genus", "Species")
+
 print(fractions_df)
 
 
-#################### 18S (METAZOA ONLY) #######################################
-
+#################### Metazoa #######################################
 
 #18S metazoa only
 
-taxa_metazoa = taxa_18S[taxa_18S[, 4] == "Metazoa", ]
+taxa_metazoa = taxa_18S[taxa_18S[, 4] == "Metazoa (Animalia)", ]
+
 taxa_metazoa = taxa_metazoa[!is.na(taxa_metazoa[, 1]), ]
+colnames(taxa_metazoa) =c("Domain", "Superkingdom", "Kingdom", "Subgroup", "Family", "Genus", "Species")
 
-#Only keep taxa presemt om both seqtab and taxa table
+write.table(taxa_metazoa, "C:/Users/johan/OneDrive/R/Master project/taxa_metazoa_SILVA.tsv", sep="\t")
 
-ix=rownames(seqtab_18S)
-taxa_metazoa = taxa_metazoa[ix %in% rownames(taxa_metazoa), ]
-
-#Save metazoa taxa table 
-
-write.table(taxa_metazoa, "C:/Users/johan/OneDrive/R/Master project/taxa_metazoa_processed.tsv", sep="\t")
-
-#Unique taxa and ASVs found per taxlevel 
+#Count unique ASVs and taxlevels
 
 ASV_taxa = matrix(data = NA, 
-                       nrow = 2,  
-                       ncol = length(colnames(taxa_metazoa)),  
-                       dimnames = list(c("#Taxa", "#ASV"), colnames(taxa_metazoa))) 
+                   nrow = 2,  
+                   ncol = length(colnames(taxa_metazoa)),  
+                   dimnames = list(c("#Taxa", "#ASV"), colnames(taxa_metazoa))) 
 
 for (i in seq_along(colnames(taxa_metazoa))) {
+  # Count unique taxa for the current column
   taxa = length(unique(taxa_metazoa[!is.na(taxa_metazoa[, i]), i]))
   ASV_taxa[1, i] = taxa
   
@@ -181,10 +169,10 @@ print(ASV_taxa)
 #Number of reads for metazoa
 
 metazoa_reads=sum(seqtab_18S)
+
 print(metazoa_reads)
 
-#Normalized clade counts
-#Non-normalized
+#Non-normalized clade count for metazoa
 
 meta_clade_counts=list()
 
@@ -208,16 +196,14 @@ for (i in 1:ncol(taxa_metazoa)){
 
 
 meta_matr[is.na(meta_matr)]=0
-meta_matr=meta_matr[rowSums(meta_matr !=0, na.rm=TRUE)>0 , , drop=FALSE]
+meta_matr=matr[rowSums(meta_matr !=0, na.rm=TRUE)>0 , , drop=FALSE]
 
-#Total reads for each taxa level
+#Reads at each taxonomic level
 
-reads = lapply(1:9, function(i) sum(na.omit(meta_clade_counts[[i]])))
+reads = lapply(1:7, function(i) sum(na.omit(meta_clade_counts[[i]])))
 
 reads_df = data.frame(
-  clade = c("Domain", "Supergroup", "Division", "Subdivision", 
-            "Class", "Order", "Family", "Genus", "Species"),
-  
+  clade = c("Domain", "Superkingdom", "Kingdom", "Subgroup", "Family", "Genus", "Species"),
   Reads = unlist(reads)
 )
 
@@ -225,49 +211,53 @@ reads_df = data.frame(
 print(reads_df)
 
 
-
-#Loop through clade counts to get the sum of reads for each taxonomic level 
+#Loop through meta_clade_counts and store the sums
 
 taxonomic_levels_meta = list()
 taxonomic_sums_meta = list()
 
-for (i in 1:9) {
+for (i in 1:7) {
+  # Extract clade counts
+  clade_meta = meta_clade_counts[[i]]
   
-  meta_clade = meta_clade_counts[[i]]
+  # Convert to data frame and remove NAs
+  clade_df_meta = na.omit(data.frame(clade_meta))
   
-  meta_clade_df = na.omit(data.frame(meta_clade))
+  # Calculate sum for each taxonomic level
+  taxonomic_sums_meta[[i]] = sum(unlist(clade_df_meta), na.rm = TRUE)
   
-  taxonomic_sums_meta[[i]] = sum(unlist(meta_clade_df), na.rm = TRUE)
-
-  taxonomic_levels_meta[[i]] = meta_clade_df
+  # Store taxonomic levels
+  taxonomic_levels_meta[[i]] = clade_df_meta
 }
 
+# Calculate sum of all reads
+sum_domain_reads_meta = sum(unlist(taxonomic_sums_meta), na.rm = TRUE)
 
-#Calculate fractions
+# Calculate fractions
+fractions_meta = sapply(taxonomic_sums_meta, function(category_sums_meta) category_sums_meta / taxonomic_sums_meta[[1]] * 100)
 
-fractions_meta = sapply(taxonomic_sums_meta, function(category_sums_meta) category_sums_meta/ taxonomic_sums_meta[[1]] * 100)
-
-#Create a data frame fractions
-
+#Create dataframe with fractions
 fractions_df_meta = data.frame(fractions_meta)
-rownames(fractions_df_meta) = c("Domain", "Supergroup", "Division", "Subdivision", "Class", "Order", "Family", "Genus", "Species")
+rownames(fractions_df_meta) = c("Domain", "Superkingdom", "Kingdom", "Subgroup", "Family", "Genus", "Species")
 
 print(fractions_df_meta)
 
-################## Plot fractions  ########################################################
 
-#Merge the fractopms for all 18S and metazoa only 
+################## PLOT ########################################################
+
+#Merge 18S fractions and metazoa only fractions
 
 merged_fractions = merge(fractions_df, fractions_df_meta, by = "row.names", all = TRUE)
 colnames(merged_fractions)[colnames(merged_fractions)=="Row.names"]="Taxa"
-colnames(merged_fractions)[colnames(merged_fractions)=="fractions"]="All 18S"
+colnames(merged_fractions)[colnames(merged_fractions)=="fractions"]="Non-metazoa"
 colnames(merged_fractions)[colnames(merged_fractions)=="fractions_meta"]="Metazoa"
 
+
 merged_df = gather(merged_fractions, key = "Category", value = "Value", -Taxa)
-taxa_order = c("Domain", "Supergroup", "Division", "Subdivision", "Class", "Order", "Family", "Genus", "Species")
-merged_df$Taxa = factor(as.character(long_data$Taxa), levels = taxa_order)
+taxa_order = c("Domain", "Superkingdom", "Kingdom", "Subgroup", "Family", "Genus", "Species")
+merged_df$Taxa = factor(as.character(merged_df$Taxa), levels = taxa_order)
 
-
+windows()
 p=ggplot(merged_df, aes(x = Taxa, y = Value, fill = Category)) +
   geom_bar(stat = "identity", position = "dodge", width = 0.5, color = "black") +
   labs(title = "Relative abundance of annotated reads per taxa level",
@@ -279,52 +269,38 @@ p=ggplot(merged_df, aes(x = Taxa, y = Value, fill = Category)) +
         plot.title = element_text(hjust = 0.5),
         axis.text.y = element_text(size = 10),
         legend.text = element_text(size = 10)) +
-  scale_fill_manual(values = c("Metazoa" = '#636363', "All 18S" = '#bdbdbd'))  
-
+  scale_fill_manual(values = c("Metazoa" = 'lightblue', "Non-metazoa" = 'orange'))
 print(p)
 ggsave = function(..., bg = 'white') ggplot2::ggsave(..., bg = bg)
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/reads_distribution_SILVA_240516.png",p, width = 10, height = 6)
 
-ggsave("C:/Users/johan/OneDrive/R/Master project/plots/reads_distribution.png",p)
 
-
-############## NMDS & Shannon for ASVs (metazoa) ##############################
-
-#Calculate similarity in ASV composition for samples for all metabarcoding samples
+############## NMDS & Shannon for metazoa ASVs ###########################################################
 
 matrix = t(norm_seqtab_18S)
 
 #Calculate Bray-Curtis dissimilarity
-
 bray_matrix = vegdist(matrix, method = "bray")
 
 #Perform NMDS
-
 nmds_result = metaMDS(bray_matrix)
 
 # Extract coordinates and Shannon diversity from the NMDS result
-
 nmds_coordinates = data.frame(nmds_result$points)
 shannon_values = diversity(matrix, index = "shannon")
 
-#Combine NMDS coordinates and Shannon diversity values
-
+# Combine NMDS coordinates and Shannon diversity values
 nmds_data = cbind(nmds_coordinates, Shannon_Diversity = shannon_values)
 
 windows()
 p = ggplot(nmds_data, aes(x = MDS1, y = MDS2, color = Shannon_Diversity)) +
   geom_point() +
-  scale_color_gradient(name = "Shannon Diversity", low ="lightblue" , high = "darkblue") +  # Grayscale color scale
-  ggtitle("NMDS plot showing Shannon Diversity for genera in each sample (PR2)") +
+  scale_color_gradient(name = "Shannon Diversity", low = "lightblue" , high = "darkblue") +  # Grayscale color scale
+  ggtitle("NMDS plot showing Shannon Diversity for ASVs in each sample (SILVA)") +
   theme_bw()  # Set theme to black and white (optional)
 
-#Print the plot
 print(p)
 
 ggsave = function(..., bg = 'white') ggplot2::ggsave(..., bg = bg)
 
-
-#Save NMDS for ASVs
-
-ggsave("C:/Users/johan/OneDrive/R/Master project/plots/NMDS_shannon_all_samples_asvs.png",final_nmds, width=10, height=6)
-
-
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/NMDS_shannon_all_samples_SILVA.png",final_nmds, width = 10, height = 6 )
