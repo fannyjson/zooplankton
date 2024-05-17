@@ -9,9 +9,11 @@ library(tidyverse)
 smhi_data=read.delim("C:/Users/johan/OneDrive/R/Master project/zooplankton_2015_2020_2024-01-25_utf8.txt")
 pr2_taxa=read_excel("C:/Users/johan/Downloads/pr2_version_5.0.0_taxonomy.xlsx")
 silva_taxa=read.delim("C:/Users/johan/Downloads/silva_132_headers.txt")
-smhi_data_common=read.delim("C:/Users/johan/OneDrive/R/Master project/smhi_data_common_samples_240411.tsv")
-pr2_taxa_common=read.delim("C:/Users/johan/OneDrive/R/Master project/metabar_df_common_samples_PR2_240411.tsv")
-silva_taxa_common=read.delim("C:/Users/johan/OneDrive/R/Master project/metabar_df_common_samples_silva_240413.tsv")
+#smhi_data_common=read.delim("C:/Users/johan/OneDrive/R/Master project/smhi_data_common_samples_240411.tsv")
+smhi_data_common=read.delim("C:/Users/johan/OneDrive/R/Master project/smhi_data_common_samples_240516.tsv")
+#pr2_taxa_common=read.delim("C:/Users/johan/OneDrive/R/Master project/metabar_df_common_samples_PR2_240411.tsv")
+pr2_taxa_common=read.delim("C:/Users/johan/OneDrive/R/Master project/metabar_df_common_samples_PR2_240516x.tsv")
+silva_taxa_common=read.delim("C:/Users/johan/OneDrive/R/Master project/metabar_df_common_samples_silva_240516.tsv")
 
 #################### ALL TAXA #######################################
 
@@ -40,24 +42,24 @@ pr2_taxa = as.data.frame(pr2_taxa)
 
 #Unique taxlevel PR2
 
-class_pr2=unique(pr2_taxa$Class)
-class_pr2=na.omit(class_pr2)
+pr2_taxa$Class[pr2_taxa$Class == ""] = NA
+class_pr2 = na.omit(unique(pr2_taxa$Class))
 
-order_pr2=unique(pr2_taxa$Order)
-order_pr2=na.omit(order_pr2)
+pr2_taxa$Order[pr2_taxa$Order == ""] = NA
+order_pr2 = na.omit(unique(pr2_taxa$Order))
 
-family_pr2=unique(pr2_taxa$Family)
-family_pr2=na.omit(family_pr2)
+pr2_taxa$Family[pr2_taxa$Family == ""] = NA
+family_pr2 = na.omit(unique(pr2_taxa$Family))
 
-genus_pr2=unique(pr2_taxa$Genus)
-genus_pr2=na.omit(genus_pr2)
+pr2_taxa$Genus[pr2_taxa$Genus == ""] = NA
+genus_pr2 = na.omit(unique(pr2_taxa$Genus))
 
-species_pr2=unique(pr2_taxa$Species)
-species_pr2=na.omit(species_pr2)
+pr2_taxa$Species[pr2_taxa$Species == ""] = NA
+species_pr2 = na.omit(unique(pr2_taxa$Species))
 
 max_length = max(length(class_pr2), length(order_pr2), length(family_pr2), length(genus_pr2), length(species_pr2))
 
-# Pad the shorter vectors with NA values to make them equal in length
+#Make equal length 
 class_pr2 = c(class_pr2, rep(NA, max_length - length(class_pr2)))
 order_pr2 = c(order_pr2, rep(NA, max_length - length(order_pr2)))
 family_pr2 = c(family_pr2, rep(NA, max_length - length(family_pr2)))
@@ -76,7 +78,7 @@ unique_pr2 = data.frame(Class = class_pr2,
 
 silva_taxa = separate(silva_taxa, 
                       col = colnames(silva_taxa), 
-                      into = paste0("col", 1:7), 
+                      into = paste0("col", 1:10), 
                       sep = ";")
 
 colnames(silva_taxa)[c(1, 2, 3, 4, 5, 6, 7)] = c("Kingdom" , "Phylum", "Class", "Order", "Family", "Genus", "Species")
@@ -105,20 +107,20 @@ silva_taxa=silva_taxa[silva_taxa$Order=="Metazoa", , drop=FALSE]
 
 #Unique taxlevels 
 
-class_silva=unique(silva_taxa$Class)
-class_silva=na.omit(class_silva)
+silva_taxa$Class[silva_taxa$Class == ""] = NA
+class_silva = na.omit(unique(silva_taxa$Class))
 
-order_silva=unique(silva_taxa$Order)
-order_silva=na.omit(order_silva)
+silva_taxa$Order[silva_taxa$Order == ""] = NA
+order_silva = na.omit(unique(silva_taxa$Order))
 
-family_silva=unique(silva_taxa$Family)
-family_silva=na.omit(family_silva)
+silva_taxa$Family[silva_taxa$Family == ""] = NA
+family_silva = na.omit(unique(silva_taxa$Family))
 
-genus_silva=unique(silva_taxa$Genus)
-genus_silva=na.omit(genus_silva)
+silva_taxa$Genus[silva_taxa$Genus == ""] = NA
+genus_silva = na.omit(unique(silva_taxa$Genus))
 
-species_silva=unique(silva_taxa$Species)
-species_silva=na.omit(species_silva)
+silva_taxa$Species[silva_taxa$Species == ""] = NA
+species_silva = na.omit(unique(silva_taxa$Species))
 
 max_length = max(length(class_silva), length(order_silva), length(family_silva), length(genus_silva), length(species_silva))
 
@@ -140,7 +142,7 @@ unique_silva = data.frame(Class = class_silva,
                           Species = species_silva)
 
 
-
+unique_silva=mutate_all(unique_silva, ~na_if(., " "))
 ############# GENERATE DF WITH UNIQUE TAXLEVELS FOR MICROSCOPY ###########################################
 
 
@@ -152,20 +154,21 @@ colnames(microscopy_taxa)[c(1:5)] = c("Class","Order", "Family", "Genus", "Speci
 
 #Unique taxlevels
 
-class=trimws(unique(microscopy_taxa$Class))
-class=na.omit(class)
+microscopy_taxa$Class[microscopy_taxa$Class == ""] = NA
+class = na.omit(trimws(unique(microscopy_taxa$Class)))
 
-order=trimws(unique(microscopy_taxa$Order))
-order=na.omit(order)
+microscopy_taxa$Order[microscopy_taxa$Order == ""] = NA
+order = na.omit(trimws(unique(microscopy_taxa$Order)))
 
-family=trimws(unique(microscopy_taxa$Family))
-family=na.omit(family)
+microscopy_taxa$Family[microscopy_taxa$Family == ""] = NA
+family = na.omit(trimws(unique(microscopy_taxa$Family)))
 
-genus=trimws(unique(microscopy_taxa$Genus))
-genus=na.omit(genus)
+microscopy_taxa$Genus[microscopy_taxa$Genus == ""] = NA
+genus = na.omit(trimws(unique(microscopy_taxa$Genus)))
 
-species=trimws(unique(microscopy_taxa$Species))
-species=na.omit(species)
+microscopy_taxa$Species[microscopy_taxa$Species == ""] = NA
+species = na.omit(trimws(unique(microscopy_taxa$Species)))
+
 
 max_length =  max(length(class), length(order), length(family), length(genus), length(species))
 
@@ -189,6 +192,8 @@ unique_microscopy = data.frame(
 
 
 
+unique_microscopy=mutate_all(unique_microscopy, ~na_if(., " "))
+
 ####### MATCH MICROSCOPY TAXA WITH PR2 TAXA ###################################
 
 
@@ -211,8 +216,8 @@ for (i in colnames(unique_pr2)) {
   }
 }
 
-total_unique_microscopy=sapply(unique_microscopy, function(x) length(unique(x)))
-total_unique_pr2=sapply(unique_pr2, function(x) length(unique(x)))
+total_unique_microscopy=sapply(unique_microscopy, function(x) length(unique(na.omit(x))))
+total_unique_pr2=sapply(unique_pr2, function(x) length(unique(na.omit(x))))
 
 #Calculate unmatched counts
 total_matches=colSums(match_counts)
@@ -231,6 +236,7 @@ rownames(match_counts)[7] = "Unmatched PR2"
 print(match_counts)
 
 
+
 ############### MATCH MICROSCOPY TAXA WITH SILVA TAXA #########################
 
 
@@ -246,15 +252,15 @@ for (i in colnames(unique_silva)) {
   }
 }
 
-total_unique_microscopy=sapply(unique_microscopy, function(x) length(unique(x)))
-total_unique_silva=sapply(unique_silva, function(x) length(unique(x)))
+total_unique_microscopy=sapply(unique_microscopy, function(x) length(unique(na.omit(x))))
+total_unique_silva=sapply(unique_silva, function(x) length(unique(na.omit(x))))
 
 #Calculate unmatched counts
 total_matches=colSums(match_counts)
 total_unmatched=total_unique_microscopy - total_matches
 unmatched_SILVA=total_unique_silva - total_matches
 
-unmatched_SILVA <- total_unique_silva - total_matches
+unmatched_SILVA = total_unique_silva - total_matches
 unmatched_SILVA[unmatched_SILVA < 0] = 0
 
 #Add unmatched counts to table
@@ -275,30 +281,32 @@ match_counts = matrix(0, nrow = ncol(unique_pr2), ncol = ncol(unique_silva),
 
 for (i in colnames(unique_pr2)) {
   for (j in colnames(unique_silva)) {
-    silva_values = as.character(unique_pr2[[i]])
-    microscopy_values = as.character(unique_silva[[j]])
-    matches = sum(silva_values %in% microscopy_values & !is.na(silva_values) & !is.na(microscopy_values))
+    pr2_values = as.character(unique_pr2[[i]])
+    silva_values = as.character(unique_silva[[j]])  # Corrected to silva_values
+    matches = sum(pr2_values %in% silva_values & !is.na(pr2_values) & !is.na(silva_values))  # Corrected to silva_values
     match_counts[i, j] = matches
   }
 }
 
-total_unique_silva=sapply(unique_silva, function(x) length(unique(x)))
+total_unique_silva = sapply(unique_silva, function(x) length(unique(na.omit(x))))  # Corrected to sapply
 
-#Calculate unmatched counts
-total_matches=colSums(match_counts)
-total_unmatched_sil=total_unique_silva - total_matches
-total_unmatched_pr=total_unique_pr2 - total_matches
+# Calculate unmatched counts
+total_matches = colSums(match_counts)
+total_unmatched_sil = total_unique_silva - total_matches  # Corrected to total_unique_silva
 
-#Add unmatched counts to table
-match_counts=rbind(match_counts, total_unmatched_sil)
-match_counts=rbind(match_counts, total_unmatched_pr)
+total_unique_pr2 = sapply(unique_pr2, function(x) length(unique(na.omit(x))))
+
+total_unmatched_pr = total_unique_pr2 - total_matches
+
+# Add unmatched counts to table
+match_counts = rbind(match_counts, total_unmatched_pr)
+match_counts = rbind(match_counts, total_unmatched_sil)
 
 rownames(match_counts)[6] = "Unmatched PR2"
 rownames(match_counts)[7] = "Unmatched SILVA"
 
-#Final match table 
+# Final match table 
 print(match_counts)
-
 
 #################### ONLY TAXA IDENTIFIED IN COMMON SAMPLES ############################
 
@@ -306,20 +314,21 @@ print(match_counts)
 
 pr2_taxa_common=pr2_taxa_common[,29:37, drop=FALSE]
 
-class_pr2_common=unique(pr2_taxa_common$Class)
-class_pr2_common=na.omit(class_pr2_common)
+pr2_taxa_common$Class[pr2_taxa_common$Class == ""] = NA
+class_pr2_common = na.omit(unique(pr2_taxa_common$Class))
 
-order_pr2_common=unique(pr2_taxa_common$Order)
-order_pr2_common=na.omit(order_pr2_common)
+pr2_taxa_common$Order[pr2_taxa_common$Order == ""] = NA
+order_pr2_common = na.omit(unique(pr2_taxa_common$Order))
 
-family_pr2_common=unique(pr2_taxa_common$Family)
-family_pr2_common=na.omit(family_pr2_common)
+pr2_taxa_common$Family[pr2_taxa_common$Family == ""] = NA
+family_pr2_common = na.omit(unique(pr2_taxa_common$Family))
 
-genus_pr2_common=unique(pr2_taxa_common$Genus)
-genus_pr2_common=na.omit(genus_pr2_common)
+pr2_taxa_common$Genus[pr2_taxa_common$Genus == ""] = NA
+genus_pr2_common = na.omit(unique(pr2_taxa_common$Genus))
 
-species_pr2_common=unique(pr2_taxa_common$Species)
-species_pr2_common=na.omit(species_pr2_common)
+pr2_taxa_common$Species[pr2_taxa_common$Species == ""] = NA
+species_pr2_common = na.omit(unique(pr2_taxa_common$Species))
+
 
 max_length = max(length(class_pr2_common), length(order_pr2_common), length(family_pr2_common), length(genus_pr2_common), length(species_pr2_common))
 
@@ -339,6 +348,8 @@ unique_pr2_common = data.frame(Class = class_pr2_common,
                         Species = species_pr2_common)
 
 
+unique_pr2_common=mutate_all(unique_pr2_common, ~na_if(., " "))
+
 ########### MICROSCOPY TAXA FOR COMMON SAMPLES #################################################
 
 cols_to_keep=c("taxon_class", "taxon_order", "taxon_family", "taxon_genus","taxon_species")
@@ -346,23 +357,20 @@ microscopy_taxa_common=smhi_data_common[ ,cols_to_keep, drop=FALSE]
 
 colnames(microscopy_taxa_common)[c(1:5)] = c("Class","Order", "Family", "Genus", "Species")
 
-class_common=trimws(unique(microscopy_taxa_common$Class))
-class_common=na.omit(class_common)
+microscopy_taxa_common$Class[microscopy_taxa_common$Class == ""] = NA
+class_common = na.omit(trimws(unique(microscopy_taxa_common$Class)))
 
-order_common=trimws(unique(microscopy_taxa_common$Order))
-order_common=na.omit(order_common)
+microscopy_taxa_common$Order[microscopy_taxa_common$Order == ""] = NA
+order_common = na.omit(trimws(unique(microscopy_taxa_common$Order)))
 
-family_common=trimws(unique(microscopy_taxa_common$Family))
-family_common=na.omit(family_common)
+microscopy_taxa_common$Family[microscopy_taxa_common$Family == ""] = NA
+family_common = na.omit(trimws(unique(microscopy_taxa_common$Family)))
 
-genus_common=trimws(unique(microscopy_taxa_common$Genus))
-genus_common=na.omit(genus_common)
+microscopy_taxa_common$Genus[microscopy_taxa_common$Genus == ""] = NA
+genus_common = na.omit(trimws(unique(microscopy_taxa_common$Genus)))
 
-species_common=trimws(unique(microscopy_taxa_common$Species))
-species_common=na.omit(species_common)
-
-max_length =  max(length(class_common), length(order_common), length(family_common), length(genus_common), length(species_common))
-
+microscopy_taxa_common$Species[microscopy_taxa_common$Species == ""] = NA
+species_common = na.omit(trimws(unique(microscopy_taxa_common$Species)))
 # Pad the shorter vectors with NA values to make them equal in length
 
 class_common = c(class_common, rep(NA, max_length - length(class_common)))
@@ -380,10 +388,13 @@ unique_microscopy_common= data.frame(
   Genus = genus_common,
   Species = species_common)
 
+unique_microscopy_common=mutate_all(unique_microscopy_common, ~na_if(., " "))
+
 match_counts = matrix(0, nrow = ncol(unique_pr2_common), ncol = ncol(unique_microscopy_common), 
                       dimnames = list(colnames(unique_pr2_common), colnames(unique_microscopy_common)))
 
-# Loop through each column in unique_silva, extract values from pr2 for comparison,
+
+# Loop through each column in unique_microscopy, extract values from pr2 for comparison,
 #count the number of matching cells between columns in microscopy and pr2
 
 for (i in colnames(unique_pr2_common)) {
@@ -395,8 +406,8 @@ for (i in colnames(unique_pr2_common)) {
   }
 }
 
-total_unique_microscopy=sapply(unique_microscopy_common, function(x) length(unique(x)))
-total_unique_pr2=sapply(unique_pr2_common, function(x) length(unique(x)))
+total_unique_microscopy=sapply(unique_microscopy_common, function(x) length(unique(na.omit(x))))
+total_unique_pr2=sapply(unique_pr2_common, function(x) length(unique(na.omit(x))))
 
 #Calculate unmatched counts
 total_matches=colSums(match_counts)
@@ -418,22 +429,25 @@ print(match_counts)
 
 silva_taxa_common$Order= gsub("Metazoa (Animalia)", "Metazoa", silva_taxa_common$Order, fixed = TRUE)
 
+names(silva_taxa_common)[names(silva_taxa_common) == "NA."] = "Species"
+
 #Unique taxlevels 
 
-class_silva_common=unique(silva_taxa_common$Class)
-class_silva_common=na.omit(class_silva_common)
+silva_taxa_common$Class[silva_taxa_common$Class == ""] = NA
+class_silva_common = na.omit(unique(silva_taxa_common$Class))
 
-order_silva_common=unique(silva_taxa_common$Order)
-order_silva_common=na.omit(order_silva_common)
+silva_taxa_common$Order[silva_taxa_common$Order == ""] = NA
+order_silva_common = na.omit(unique(silva_taxa_common$Order))
 
-family_silva_common=unique(silva_taxa_common$Family)
-family_silva_common=na.omit(family_silva_common)
+silva_taxa_common$Family[silva_taxa_common$Family == ""] = NA
+family_silva_common = na.omit(unique(silva_taxa_common$Family))
 
-genus_silva_common=unique(silva_taxa_common$Genus)
-genus_silva_common=na.omit(genus_silva_common)
+silva_taxa_common$Genus[silva_taxa_common$Genus == ""] = NA
+genus_silva_common = na.omit(unique(silva_taxa_common$Genus))
 
-species_silva_common=unique(silva_taxa_common$Species)
-species_silva_common=na.omit(species_silva_common)
+silva_taxa_common$Species[silva_taxa_common$Species == ""] = NA
+species_silva_common = na.omit(unique(silva_taxa_common$Species))
+
 
 max_length = max(length(class_silva_common), length(order_silva_common), length(family_silva_common), length(genus_silva_common), length(species_silva_common))
 
@@ -453,6 +467,7 @@ unique_silva_common = data.frame(Class = class_silva_common,
                           Genus = genus_silva_common,
                           Species = species_silva_common)
 
+unique_silva_common=mutate_all(unique_silva_common, ~na_if(., " "))
 #Make match table
 
 match_counts = matrix(0, nrow = ncol(unique_pr2_common), ncol = ncol(unique_silva_common), 
@@ -467,17 +482,17 @@ for (i in colnames(unique_pr2_common)) {
   }
 }
 
-total_unique_silva_common=sapply(unique_silva_common, function(x) length(unique(x)))
+total_unique_silva_common=sapply(unique_silva_common, function(x) length(unique(na.omit(x))))
 total_unique_pr2_common=sapply(unique_pr2_common, function(y) length(unique(y)))
 
 #Calculate unmatched counts
 total_matches=colSums(match_counts)
 
-unmatched_SILVA <- total_unique_silva_common - total_matches
+unmatched_SILVA = total_unique_silva_common - total_matches
 unmatched_SILVA[unmatched_SILVA < 0] = 0
 
-unmatched_pr <- total_unique_pr2_common - total_matches
-unmatched_SILVA[unmatched_pr < 0] = 0
+unmatched_pr = total_unique_pr2_common - total_matches
+unmatched_pr[unmatched_pr < 0] = 0
 
 
 
@@ -509,8 +524,8 @@ for (i in colnames(unique_pr2_common)) {
   }
 }
 
-total_unique_microscopy=sapply(unique_microscopy_common, function(x) length(unique(x)))
-total_unique_pr2=sapply(unique_pr2_common, function(x) length(unique(x)))
+total_unique_microscopy=sapply(unique_microscopy_common, function(x) length(unique(na.omit(x))))
+total_unique_pr2=sapply(unique_pr2_common, function(x) length(unique(na.omit(x))))
 
 #Calculate unmatched counts
 total_matches=colSums(match_counts)
@@ -539,15 +554,15 @@ for (i in colnames(unique_silva_common)) {
   }
 }
 
-total_unique_microscopy=sapply(unique_microscopy_common, function(x) length(unique(x)))
-total_unique_silva=sapply(unique_silva_common, function(x) length(unique(x)))
+total_unique_microscopy=sapply(unique_microscopy_common, function(x) length(unique(na.omit(x))))
+total_unique_silva=sapply(unique_silva_common, function(x) length(unique(na.omit(x))))
 
 #Calculate unmatched counts
 total_matches=colSums(match_counts)
 total_unmatched=total_unique_microscopy - total_matches
 unmatched_SILVA=total_unique_silva - total_matches
 
-unmatched_SILVA <- total_unique_silva_common - total_matches
+unmatched_SILVA = total_unique_silva_common - total_matches
 unmatched_SILVA[unmatched_SILVA < 0] = 0
 
 #Add unmatched counts to table
@@ -560,3 +575,4 @@ rownames(match_counts)[7] = "Unmatched SILVA"
 #Final match table
 
 print(match_counts)
+
