@@ -5,7 +5,7 @@ patterns of zooplankton in the Baltic Sea area", where I explore metabarcoding a
 
 The code is organised according to following steps:
 
-1. "pre_processed.R" - This file is pre-processing of the metabarcoding data and the code is a modified pipeline from
+1. "pre_processing.R" - This file is pre-processing of the metabarcoding data and the code is a modified pipeline from
    The Environmental Genomics group. The output files are used in the following steps. 
 
 2. "annotated_reads_comparison.R" - Investigation of the distribution of annotated reads for different taxonomic levels for all 18S vs. metazoa in reference database PR^2.
@@ -18,3 +18,4 @@ The code is organised according to following steps:
 
 6. "comparison_of_methods.R" : Comparative barplots of different kinds for microscopy and metabarcoding + scatter plots and Pearson correlations between methods. 
 
+7. "pr2_silva_table.R" : Matching-tables for SILVA, PR^2 and microscopy.
