@@ -3,8 +3,6 @@
 This is the GitHub page for my master project "Using metabarcoding data to elucidate spatiotemporal distribution
 patterns of zooplankton in the Baltic Sea area", where I explore metabarcoding and microscopy data from the Swedish marine monitoring program. 
 
-The code is organised according to following steps:
-
 1. "pre_processing.R" - This file is pre-processing of the metabarcoding data and the code is a modified pipeline from
    The Environmental Genomics group. The output files are used in the following steps. 
 
@@ -18,4 +16,4 @@ The code is organised according to following steps:
 
 6. "comparison_of_methods.R" : Comparative barplots of different kinds for microscopy and metabarcoding + scatter plots and Pearson correlations between methods. 
 
-7. "pr2_silva_table.R" : Matching-tables for SILVA, PR^2 and microscopy.
+7. "databases_comparison.R" : Matching-tables for SILVA, PR^2 and microscopy.
