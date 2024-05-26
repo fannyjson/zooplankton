@@ -1,9 +1,5 @@
-#The output from running this code is filtered metadata and seqtab tables
-#The code should be run both with all 18S included and then with metazoa only
-#The seqtab tables generated are both normalized and non-normalized
-#Original code was provided from The Environmental Genomics group at SciLifeLab. The code has been modified.
-
 # PRE-PROCESSING OF DATA
+# This code is a modified version of the Environmental Genomics groups code (SciLifeLab)
 
 # SET WORKING DIRECTORY, LOAD LIBRARIES, SET IN FILES
 
@@ -356,6 +352,25 @@ metadata$month = months(metadata$date)
 
 metadata$day_length = daylength(metadata$Latitude, yday(metadata$date))
 
+#Set ploting theme and colors
+
+#By default the plots will now have white background
+
+my_theme = theme_bw() +
+  theme(
+    text = element_text(size = 16),  # Adjust font size for all text
+    plot.title = element_text(size = 18),  # Adjust font size for plot titles
+    axis.title = element_text(size = 16)  # Adjust font size for axis labels
+  )
+
+max_tax_l = ncol(taxa)
+bar_col = '#1c9099'
+
+basin_colors = c('#4d004b', '#3690c0', '#238443', '#fec44f', '#f768a1')
+sea_basin_shape_scale = c(25, 24, 23, 22, 21)
+names(sea_basin_shape_scale) = sea_basins
+names(basin_colors) = sea_basins
+
 #Save processed files 
 
 write.table(metadata,
@@ -370,5 +385,3 @@ write.table(seqtab,
             sep = '\t', row.names = TRUE, col.names = TRUE)
 
 save.image(paste('read_merged_18S.RData', sep = '')) 
-
-  
