@@ -9,19 +9,19 @@ taxa_18S=read.table("C:/Users/johan/OneDrive/R/Master project/taxa_18S.tsv")
 
 #Normalized seqtab table metazoa only
 
-norm_seqtab_18S=read.table("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_metazoa_240410.tsv")
+norm_seqtab_18S=read.table("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_metazoa.tsv")
 
 #Normalized seqtab all 18S
 
-norm_seqtab_18S_all=read.table("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_18S_240410.tsv")
+norm_seqtab_18S_all=read.table("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_18S.tsv")
 
 #Original seqtab metazoa only
 
-seqtab_18S=read.table("C:/Users/johan/OneDrive/R/Master project/seqtab_metazoa_240410.tsv")
+seqtab_18S=read.table("C:/Users/johan/OneDrive/R/Master project/seqtab_metazoa.tsv")
 
 #Original seqtab all 18S
 
-seqtab_18S_all=read.table("C:/Users/johan/OneDrive/R/Master project/seqtab_18S_240410.tsv")
+seqtab_18S_all=read.table("C:/Users/johan/OneDrive/R/Master project/seqtab_18S.tsv")
 
 #Load libraries 
 
@@ -63,7 +63,7 @@ taxa_18S[] = lapply(taxa_18S, replace)
 
 
 
-########################## INVESTIGATE 18S DATA ################################
+########################## NON-METAZOA ################################
 
 #Keep non-metazoa
 taxa_18S = taxa_18S[!taxa_18S[, 4] == "Metazoa", ]
@@ -227,7 +227,6 @@ reads_df = data.frame(
 print(reads_df)
 
 
-
 #Loop through clade counts to get the sum of reads for each taxonomic level 
 
 taxonomic_levels_meta = list()
@@ -286,7 +285,7 @@ p=ggplot(merged_df, aes(x = Taxa, y = Value, fill = Category)) +
 print(p)
 ggsave = function(..., bg = 'white') ggplot2::ggsave(..., bg = bg)
 
-ggsave("C:/Users/johan/OneDrive/R/Master project/plots/reads_distribution_240516.png",p, width = 10, height = 6 )
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/reads_distribution.png",p, width = 10, height = 6 )
 
 
 ############## NMDS & Shannon for ASVs (metazoa) ##############################
