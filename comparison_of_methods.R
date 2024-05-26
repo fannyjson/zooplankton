@@ -6,28 +6,28 @@ setwd("C:/Users/johan/OneDrive/R/Master project")
 
 #Normalized seqtab table only common genera
 #PR2
-new_seqtab_genus=read.table("C:/Users/johan/OneDrive/R/Master project/new_seqtab_common_genera_240411.tsv", sep="\t")
+new_seqtab_genus=read.table("C:/Users/johan/OneDrive/R/Master project/new_seqtab_common_genera.tsv", sep="\t")
 
 
 #Normalized seqtab with all genera
 #PR2
-new_seqtab=read.table("C:/Users/johan/OneDrive/R/Master project/new_seqtab_genus_240411.tsv", sep="\t")
+new_seqtab=read.table("C:/Users/johan/OneDrive/R/Master project/new_seqtab_genus.tsv", sep="\t")
 
 #Merged df genus (all)
 #PR2
-all_merged_metabar_df=read.table("C:/Users/johan/OneDrive/R/Master project/metabar_df_common_samples_PR2_240411.tsv", sep="\t")
+all_merged_metabar_df=read.table("C:/Users/johan/OneDrive/R/Master project/metabar_df_common_samples_PR2.tsv", sep="\t")
 
 
 #Merged df genus (only common with microscopy)
 #PR2
-genus_meta_combined=read.table("C:/Users/johan/OneDrive/R/Master project/merged_metabar_common_genera_240411.tsv", sep="\t")
+genus_meta_combined=read.table("C:/Users/johan/OneDrive/R/Master project/merged_metabar_common_genera.tsv", sep="\t")
 
 #Count df microscopy
 #PR2
 count_microscopy=read.table("C:/Users/johan/OneDrive/R/Master project/count_microscopy_commonsamples.tsv", sep="\t")
 
 #Actual and predicted genera from random forest using 5-fold cross-validation 
-rf_data=read.delim("C:/Users/johan/OneDrive/R/ML/RF/sample_predicted_240506.tsv")
+rf_data=read.delim("C:/Users/johan/OneDrive/R/ML/RF/sample_predicted.tsv")
 
 #Not cross-validated
 
