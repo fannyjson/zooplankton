@@ -5,14 +5,15 @@ setwd("C:/Users/johan/OneDrive/R/Master project")
 
 #Load files and libraries
 
+
 #Metazoa only
-taxa_metazoa=read.delim("C:/Users/johan/OneDrive/R/Master project/taxa_metazoa_processed.tsv")
+taxa_metazoa=read.delim("C:/Users/johan/OneDrive/R/Master project/taxa_metazoa.tsv")
 
 #Normalized seqtab metazoa
-seqtab_processed=read.delim("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_18S_processed.tsv")
+seqtab_processed=read.delim("C:/Users/johan/OneDrive/R/Master project/norm_seqtab_18S.tsv")
 
 #Metadata
-metadata_processed=read.delim("C:/Users/johan/OneDrive/R/Master project/metadata_processed.tsv")
+metadata_processed=read.delim("C:/Users/johan/OneDrive/R/Master project/metadata.tsv")
 
 #SMHI data
 smhi_data=read.delim("C:/Users/johan/OneDrive/R/Master project/zooplankton_2015_2020_2024-01-25_utf8.txt")
@@ -32,6 +33,7 @@ library(tidyr)
 library(ggplot2)
 library(VennDiagram)
 library(vegan)
+library(scales)
 
 #Make dataframes with unique taxa for every taxlevel
 
@@ -89,7 +91,7 @@ taxa_metabar=extract_taxa_list(seqtab_processed, taxa_metazoa, 5)
 rownames(taxa_metabar)=NULL
 colnames(taxa_metabar)=gsub("^Taxa\\.", "", colnames(taxa_metabar))
 
-#Combines taxa found in the metabar data with the metadata and only keep unique rows
+#Combines taxa found in the metabarcoding data with the metadata and only keep unique rows
 
 combined_df = merge(metadata_processed, taxa_metabar, by = "sample_id")
 names(combined_df)[names(combined_df)=="station_name"] = "Station"
@@ -101,8 +103,7 @@ combined_df$Station = gsub("\\s{2,}", " ", combined_df$Station)
 #write.table(combined_df, "C:/Users/johan/OneDrive/R/Master project/merged_df_all_genus.tsv", sep="\t")
 
 
-################# STANDARDIZE STATION NAMES AND SAMPLES#########################
-
+################# STANDARDIZE STATION NAMES AND SAMPLE NAMES #########################
 
 #Coherent column names for both datasets
 
@@ -132,9 +133,6 @@ replace_station_names = function(station_name) {
 
 smhi_data$Station = sapply(smhi_data$Station, replace_station_names)
 
-
-#Match stations in smhi_data with stations in metabar data
-
 #Standardize stations in combined_df
 
 standardize_stations = data.frame(Original = c("GAVIK-1", "RÅNEÅ-2"),
@@ -144,6 +142,7 @@ standardize_stations = data.frame(Original = c("GAVIK-1", "RÅNEÅ-2"),
 combined_df$Station = sapply(combined_df$Station, replace_station_names)
 
 # Create common sample names (same as microscopy count table sample names)
+
 station_ids=smhi_data[,c("Station", "station_id")]
 station_ids=unique(station_ids)
 metabar_df=merge(combined_df, station_ids, by = "Station") #all.x=TRUE will give all stations
@@ -153,7 +152,7 @@ metabar_df$sample=paste0(metabar_df$station_id, "_", metabar_df$Date)
 
 translate_sample_name=metabar_df[,c("sample_id", "sample")]
 
-#Rename colnames for seqtab to new sample names using translation table
+#Rename samplenames in seqtab to new sample names using translation table
 
 for (old_name in colnames(seqtab_processed)) {
   index = match(old_name, translate_sample_name$sample_id)
@@ -169,18 +168,21 @@ smhi_data$sample=paste0(smhi_data$station_id, "_", smhi_data$Date)
 smhi_data$sample = as.character(smhi_data$sample)
 metabar_df$sample = as.character(metabar_df$sample)
 common_samples=intersect(smhi_data$sample, metabar_df$sample)
-metabar_df = metabar_df[metabar_df$sample %in% common_samples, ]
-smhi_data = smhi_data[smhi_data$sample %in% common_samples, ]
+metabar_df = metabar_df[duplicated(metabar_df$sample) | metabar_df$sample %in% common_samples, ]
+smhi_data = smhi_data[duplicated(smhi_data$sample) | smhi_data$sample %in% common_samples, ]
+count_microscopy = count_microscopy[,colnames(count_microscopy) %in% common_samples, drop = FALSE]
+count_microscopy= subset(count_microscopy, rowSums(count_microscopy) != 0)
 
 #Check what stations have common station id:s
 
 common_stations = intersect(smhi_data$station_id, metabar_df$station_id)
 print(unique(common_stations))
 
+
 #Save smhi_data and metabar_df
 
-write.table(smhi_data, "C:/Users/johan/OneDrive/R/Master project/smhi_data_common_samples_240411.tsv", sep="\t")
-write.table(metabar_df, "C:/Users/johan/OneDrive/R/Master project/metabar_df_common_samples_PR2_240411.tsv", sep="\t")
+write.table(smhi_data, "C:/Users/johan/OneDrive/R/Master project/smhi_data_common_samples_240516.tsv", sep="\t")
+write.table(metabar_df, "C:/Users/johan/OneDrive/R/Master project/metabar_df_common_samples_PR2_240516x.tsv", sep="\t")
 
 #Only keep rows that have annotations on genus level
 
@@ -200,7 +202,8 @@ seqtab_processed_subset=seqtab_processed[matching_asvs, ]
 new_seqtab=cbind(genus_df, seqtab_processed_subset)
 
 # Make seqtab with genus instead of asvs and only for common samples
-#common_columns=intersect(colnames(new_seqtab), colnames(count_microscopy))
+
+common_columns=intersect(colnames(new_seqtab), colnames(count_microscopy))
 
 keep_col=c("Genus",common_samples)
 new_seqtab=new_seqtab[,keep_col, drop=FALSE]
@@ -213,15 +216,15 @@ count_microscopy = count_microscopy %>%
 
 
 #write.table(metabar_df, "C:/Users/johan/OneDrive/R/Master project/merged_metabar_all_genera_240411.tsv", sep="\t")
-write.table(count_microscopy, "C:/Users/johan/OneDrive/R/Master project/count_microscopy_commonsamples_240411.tsv", sep="\t")
-write.table(new_seqtab_genus, "C:/Users/johan/OneDrive/R/Master project/new_seqtab_genus_240411.tsv", sep="\t")
+write.table(count_microscopy, "C:/Users/johan/OneDrive/R/Master project/count_microscopy_commonsamples_240516.tsv", sep="\t")
+write.table(new_seqtab_genus, "C:/Users/johan/OneDrive/R/Master project/new_seqtab_genus_240516.tsv", sep="\t")
 
 #Run if only common genera should be included
 
 metabar_df=metabar_df[metabar_df$Genus %in% rownames(count_microscopy), , drop=FALSE] 
-write.table(metabar_df, "C:/Users/johan/OneDrive/R/Master project/merged_metabar_common_genera_240411.tsv", sep="\t")
+write.table(metabar_df, "C:/Users/johan/OneDrive/R/Master project/merged_metabar_common_genera_240516.tsv", sep="\t")
 new_seqtab_common_genus=new_seqtab_genus[rownames(new_seqtab_genus) %in% rownames(count_microscopy), , drop=FALSE]
-write.table(new_seqtab_common_genus, "C:/Users/johan/OneDrive/R/Master project/new_seqtab_common_genera_240411.tsv", sep="\t")
+write.table(new_seqtab_common_genus, "C:/Users/johan/OneDrive/R/Master project/new_seqtab_common_genera_240516.tsv", sep="\t")
 
 
 ############## NMDS for genera in common samples ##############################
@@ -272,21 +275,31 @@ range_salinity=range(nmds_data$Salinity)
 #Scale salinity to point sizes
 scaled_sizes = rescale(nmds_data$Salinity, to = c(min_size, max_size))
 
+nmds_data$Station_ID = gsub("\\(.*\\)", "", nmds_data$Station_ID)
+
 windows()
 
 #Plot NMDS with different colors for different stations and different sizes for salinity
 final_nmds = ggplot(nmds_data, aes(x = MDS1, y = MDS2, color = Station_ID, size = scaled_sizes)) +
   geom_point() +
-  ggtitle("NMDS microscopy") +
+  ggtitle("NMDS for genera in microscopy samples") +
   theme_bw() +  
   scale_color_manual(name = "Station", values = colors) +
-  scale_size_continuous(name = "Salinity", range = c(min_size, max_size), guide=FALSE)
+  scale_size_continuous(name = "Salinity", range = c(min_size, max_size), guide=FALSE)+
+    theme(
+      legend.text = element_text(size = 15),    
+      legend.title = element_text(size = 15), 
+      plot.title = element_text(size = 20)
+      
+    )
+    
+
 
 
 print(final_nmds)
 
 #Save NMDS plot
-ggsave("C:/Users/johan/OneDrive/R/Master project/plots/NMDS_microscopy_salinity.png",final_nmds, width=10, height=6)
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/NMDS_microscopy_salinity.png",final_nmds, width=12, height=8)
 
 
 #Plot seasonal variations
@@ -295,14 +308,21 @@ windows()
 
 final_nmds = ggplot(nmds_data, aes(x = MDS1, y = MDS2, color = Station_ID, shape = Season)) +
   geom_point(size=4) +
-  ggtitle("NMDS microscopy") +
+  ggtitle("NMDS for genera in microscopy samples") +
   theme_bw() + 
   scale_color_manual(name = "Station", values = colors) +
   scale_shape_manual(name = "Season", 
-                     values = c("Spring" = 0, "Summer" = 1, "Fall" = 2, "Winter" = 3))
+                     values = c("Spring" = 0, "Summer" = 1, "Fall" = 2, "Winter" = 3))+
+  theme(
+    legend.text = element_text(size = 15),    
+    legend.title = element_text(size = 15), 
+    plot.title = element_text(size = 20)
+    
+  )
+
 print(final_nmds)
 
-ggsave("C:/Users/johan/OneDrive/R/Master project/plots/NMDS_microscopy_season.png", final_nmds, width = 10, height = 6)
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/NMDS_microscopy_season.png", final_nmds, width = 12, height = 8)
 
 
 ################ METABARCODING NMDS GENERA ############################################
@@ -355,20 +375,30 @@ range_salinity=range(nmds_data$Salinity)
 
 scaled_sizes=rescale(nmds_data$Salinity, to = c(min_size, max_size))
 
-windows()
+
+nmds_data$Station_ID = gsub("\\(.*\\)", "", nmds_data$Station_ID)
 
 #Plot NMDS with different colors for different stations and different sizes for salinity
 
+windows()
+
+#Plot NMDS with different colors for different stations and different sizes for salinity
 final_nmds = ggplot(nmds_data, aes(x = MDS1, y = MDS2, color = Station_ID, size = scaled_sizes)) +
   geom_point() +
-  ggtitle("NMDS metabarcoding") +
+  ggtitle("NMDS for genera in metabarcoding samples") +
   theme_bw() +  
   scale_color_manual(name = "Station", values = colors) +
-  scale_size_continuous(name = "Salinity", range = c(min_size, max_size), guide=FALSE)
+  scale_size_continuous(name = "Salinity", range = c(min_size, max_size), guide=FALSE)+
+  theme(
+    legend.text = element_text(size = 15),    
+    legend.title = element_text(size = 15), 
+    plot.title = element_text(size = 20)
+    
+  )
 
 
 print(final_nmds)
-ggsave("C:/Users/johan/OneDrive/R/Master project/plots/NMDS_metabarcoding_salinity.png",final_nmds, width=10, height=6)
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/NMDS_metabarcoding_salinity.png",final_nmds, width=12, height=8)
 
 #Seasonal NMDS metabarcoding
 
@@ -376,27 +406,33 @@ windows()
 
 final_nmds = ggplot(nmds_data, aes(x = MDS1, y = MDS2, color = Station_ID, shape = Season)) +
   geom_point(size=5) +
-  ggtitle("NMDS metabarcoding") +
+  ggtitle("NMDS for genera in metabarcoding samples") +
   theme_bw() + 
   scale_color_manual(name = "Station", values = colors) +
   scale_shape_manual(name = "Season", 
-                     values = c("Spring" = 0, "Summer" = 1, "Fall" = 2, "Winter" = 3)) 
+                     values = c("Spring" = 0, "Summer" = 1, "Fall" = 2, "Winter" = 3)) +
+  theme(
+    legend.text = element_text(size = 15),    
+    legend.title = element_text(size = 15), 
+    plot.title = element_text(size = 20)
+    
+  )
+
 print(final_nmds)
 
-ggsave("C:/Users/johan/OneDrive/R/Master project/plots/NMDS_metabarcoding_seasonal.png", final_nmds, width = 10, height = 6)
+ggsave("C:/Users/johan/OneDrive/R/Master project/plots/NMDS_metabarcoding_seasonal.png", final_nmds, width = 12, height = 8)
 
 
 
 ################ METABARCODING NMDS ASVs ############################################
 
 seqtab_asvs=seqtab_processed[, colnames(seqtab_processed) %in% common_samples , drop=FALSE]
+matrix=t(seqtab_asvs)
 
-matrix = t(seqtab_asvs)
-
-sample=colnames(new_seqtab_genus)
+sample=rownames(matrix)
 season = metabar_df$season[match(sample, metabar_df$sample)]
 station_ids = substr(rownames(matrix), 1, 6)
-salinity = metabar_df$Salinity[match(sample,metabar_df$sample)]
+salinity=metabar_df$Salinity[match(sample, metabar_df$sample)]
 stations = c("264194","263732", "263725", "263738", "263729", "263728", "264876", "263903", "263628", "263757", "190745", "263629", "263856", "263730")
 station_names = c("Å17 (264194)", "BY31 (263732)", "BY2 (263725)", "B1 (263738)", "REF M1V1 (263729)", "BY5 (263728)", "ANHOLT E (264876)", "N14 (263903)", "SLÄGGÖ (263628)", "GA1 (263757)","C3 (190745)", "B7 (263629)", "RA2 (263856)", "BY15 (263730)")
 
@@ -441,7 +477,7 @@ windows()
 final_nmds = ggplot(nmds_data, aes(x = MDS1, y = MDS2, color = Station_ID, size = scaled_sizes)) +
   geom_point() +
   ggtitle("NMDS ASVs PR2") +
-  theme_bw() +  # Set theme to black and white (optional)
+  theme_bw() + 
   scale_color_manual(name = "Station", values = colors) +
   scale_size_continuous(name = "Salinity", range = c(min_size, max_size), guide=FALSE) # Add more shapes as needed
 
